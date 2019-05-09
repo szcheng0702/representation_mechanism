@@ -77,15 +77,27 @@ def DefineInputSignals(inputVal, delayToInput, inputOnLength, timePoints):
     inputTensor[delayToInput:(delayToInput+inputOnLength),0,0] = inputVal
     return inputSig, inputTensor
 
+def ComputeDecay(targetVal,dt,delayToInput):
+    delayTensor=np.zeros((delayToInput+1,1))
+    delayTensor[0]=targetVal
+
+    for i in range(delayToInput):
+        delayTensor[i+1]=delayTensor[i]*dt
+
+
+    return delayTensor
+
+
 # Creates a step of targetVal height after delay
-def DefineOutputTarget(targetVal, delayToInput, timePoints):
+def DefineOutputTarget(targetVal, delayToInput, timePoints,dt):
     targetSig = np.zeros((timePoints,1))
+    targetSig[:delayToInput+1]=ComputeDecay(targetVal,dt,delayToInput)
     targetSig[(delayToInput+1):timePoints] = targetVal
     targetTensor = torch.zeros(timePoints, 1, 1)
     targetTensor[(delayToInput):,0,0] = targetVal
     return targetSig, targetTensor
 
-def GenerateOneDimensionalStepTarget(useVal, delayToInput, inputOnLength, timePoints):
+def GenerateOneDimensionalStepTarget(useVal, delayToInput, inputOnLength, timePoints,dt):
     inputSig, inputTensor = DefineInputSignals(useVal, delayToInput, inputOnLength, timePoints)
     targetSig, targetTensor = DefineOutputTarget(useVal, delayToInput, timePoints)
     return inputSig, targetSig, inputTensor, targetTensor

@@ -16,14 +16,15 @@ import pandas as pd
 import GenerateDiffDynamics
 from config import Config#for input
 import random
+import pickle
 getBatch = GenerateDiffDynamics.TargetBatch
 
 import pdb
 
 parser = configargparse.ArgumentParser(default_config_files=["config.ini"])
 parser.add('-c', '--config_file', required=False, is_config_file=True, help='config file path')
-parser.add('--time', type=int, default=0, metavar='N',
-                    help='i-th time to call using same training settings (inputs arguments may vary)')
+parser.add('--time', type=int, default=1, metavar='N',
+                    help='total number of time to call using same training settings')
 parser.add('--batch_size', type=int, default=10, metavar='N',
                     help='input batch size for training (default: 100)')
 parser.add('--epochNum', type=int, default=100, metavar='N',
@@ -62,10 +63,11 @@ parser.add('--noise_std', type=float, default=0, metavar='N',
                     help='set noise value')
 parser.add('--dynamics',type=str,default='step',metavar='D',
                     help='output dynamics type, choose from [step,ramp,sinusoidal]')
+# parser.add('--StatsSaveFileName', type=str, default='tempStats', metavar='N',
+#                     help='where to save statistics for multiple trial outputs')
 
-
-def save_checkpoint(args,state, currentIter):
-    file_name = args.baseDirectory+args.baseSaveFileName+'_'+str(currentIter)+'_'+str(args.time)
+def save_checkpoint(args,state, currentIter,ithrun):
+    file_name = args.baseDirectory+args.baseSaveFileName+'_'+str(currentIter)+'_'+str(ithrun)
     torch.save(state, file_name)
 
 def timeSince(since):
@@ -94,9 +96,13 @@ def plotOutput(targetTensors, outputTensors):
         currentColor = colorList[i%len(colorList)]
         plt.plot(torch.cat(targetTensors, dim=1)[i].numpy(), currentColor+':')
         plt.plot(torch.cat(outputTensors, dim=1).data.numpy()[i], currentColor+'-')
+
+    plt.show()
+    plt.pause(3)
+    plt.close()
     
-    plt.draw()
-    plt.pause(0.001)
+    # plt.draw()
+    # plt.pause(0.001)
 
 
 # def generateTestSet(targetError):
@@ -112,18 +118,16 @@ def plotOutput(targetTensors, outputTensors):
 
 #     return
 
+
 def signal_arguments(config):
     delayToInput = random.choice(config.delayToInput)
     inputOnLength = random.choice(config.inputOnLength)
     timePoints = random.choice(config.timePoints)
-    targetSlope=random.choice(config.targetSlope)
+    rampPeak=random.choice(config.rampPeak)
 
-    return delayToInput,inputOnLength,timePoints,targetSlope
+    return delayToInput,inputOnLength,timePoints,rampPeak
 
-def main():
-    # Code block:
-    config=Config()
-    args = parser.parse_args()
+def run_singletrial(config,ithrun):
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -157,9 +161,9 @@ def main():
         args.dropUnit = checkpoint['dropUnit']
         lastSavedIter=checkpoint['iter']
         delayToInput=checkpoint['delayToInput']
-        inputOnLength=checkpoint['timePoints']
+        inputOnLength=checkpoint['inputOnLength']
         timePoints=checkpoint['timePoints']
-        targetSlope=checkpoint['targetSlope']
+        rampPeak=checkpoint['rampPeak']
 
         network = RUN.RateUnitNetwork(
             args.inputSize, args.hiddenUnitNum, args.outputSize, args.dt, args.noise)
@@ -172,7 +176,7 @@ def main():
         network = RUN.RateUnitNetwork(args.inputSize, args.hiddenUnitNum, \
             args.outputSize, args.dt, args.noise_std).to(device)
 
-        delayToInput,inputOnLength,timePoints,targetSlope=signal_arguments(config)
+        delayToInput,inputOnLength,timePoints,rampPeak=signal_arguments(config)
 
     optimizer = optim.Adam(network.parameters(), args.learningRate)
     criterion = nn.MSELoss()
@@ -204,16 +208,16 @@ def main():
 
 
     #write input information
-    inputarg_name=['delayToInput','inputOnLength','timePoints','targetSlope']
-    inputarg_value=[delayToInput,inputOnLength,timePoints,targetSlope]
+    inputarg_name=['delayToInput','inputOnLength','timePoints','rampPeak']
+    inputarg_value=[delayToInput,inputOnLength,timePoints,rampPeak]
 
-    with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(args.time)+'_inputarg.csv', 'w') as lossFile:
+    with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
         wr = csv.writer(lossFile, delimiter='\t')
         wr.writerows(zip(inputarg_name, inputarg_value))
 
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
-        inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,args.dynamics,targetSlope)
+        inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
         inputTensor = Variable(inputTensor).to(device)
         # targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
         
@@ -243,7 +247,7 @@ def main():
             current_loss = 0
             print('Iteration %d Time (%s) Average loss: %.4f ' % (iter, timeSince(start), current_avg_loss))
 
-            # with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(args.time)+'_losses.csv', 'w') as lossFile:
+            # with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv', 'w') as lossFile:
             #     wr = csv.writer(lossFile, delimiter='\t')
             #     wr.writerows(zip(all_lossesX, all_losses))
 
@@ -266,24 +270,68 @@ def main():
                 'delayToInput':delayToInput,
                 'inputOnLength':inputOnLength,
                 'timePoints':timePoints,
-                'targetSlope':targetSlope
+                'rampPeak':rampPeak
                 }
-            save_checkpoint(args,state, iter)
+            save_checkpoint(args,state, iter,ithrun)
 
     print('Done training network')
-
+    # plotOutput([targetTensor],[oo])
 
 
     list_of_tuples=list(zip(all_lossesX, all_losses))
 
     df = pd.DataFrame(list_of_tuples, columns = ['Iteration', 'MSELoss']) 
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(args.time)+'_losses.csv')
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
 
     print('Average training loss =', np.mean(all_losses))
     # plotScatter(all_lossesX, all_losses)
 
+    # with open(args.StatsSaveFileName, 'wb') as output:
+    #         pickle.dump(inputs, output, pickle.HIGHEST_PROTOCOL)
+    #         pickle.dump()
 
+    with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
+        wr = csv.writer(lossFile, delimiter='\t')
+        wr.writerows(zip(inputarg_name, inputarg_value))
+
+    return targetTensor,oo,all_losses[-1]
+
+def run_multipletrials_samesetting(config,args):
+    targetTensors=[]
+    outputTensors=[]
+    lastLosses=[]
+
+    for i in range(args.time):
+        print('Trial {}\n'.format(i+1))
+        targetTensor,outputTensor,lastloss=run_singletrial(config,i)
+
+        targetTensors.append(targetTensor)
+        outputTensors.append(outputTensor)
+        lastLosses.append(lastloss)
+
+    df=pd.DataFrame({'hiddenUnit:'+str(args.hiddenUnitNum):lastLosses})
+
+    plotOutput(targetTensors,outputTensors)
+
+    return df
+
+def run_multiple_diffhiddenUnit(hiddenUnitLst,config,args):
+    df_lst=[]
+    for i in range(len(hiddenUnitLst)):
+        args.hiddenUnitNum=hiddenUnitLst[i]
+        print('Hidden Units: {}'.format(args.hiddenUnitNum))
+        df_current=run_multipletrials_samesetting(config,args)
+        df_lst.append(df_current)
+
+    df=pd.concat(df_lst,axis=1)
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffHidden.csv')
+
+  
 
 if __name__=='__main__':
-    main()
+    config=Config()
+    args = parser.parse_args()
+    hiddenUnitLst=range(100,450,50)
+    run_multiple_diffhiddenUnit(hiddenUnitLst,config,args)
+
 

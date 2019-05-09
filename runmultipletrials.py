@@ -1,5 +1,16 @@
 import subprocess
 import pandas as pd
+import matplotlib.pyplot as plt
+import pdb
+import pickle
+
+# def loadall(filename):
+#     with open(filename, "rb") as f:
+#         while True:
+#             try:
+#                 yield pickle.load(f)
+#             except EOFError:
+#                 break
 
 def combine_results(csvfile_precendent,num):
 	df_list=[]
@@ -9,7 +20,6 @@ def combine_results(csvfile_precendent,num):
 	
 	df_concat=pd.concat(df_list)
 
-	print(df_concat)
 
 	by_row_index = df_concat.groupby(df_concat.index)
 	df_means = by_row_index.mean()
@@ -21,18 +31,41 @@ def combine_results(csvfile_precendent,num):
 	df_means.to_csv(outputname)
 	df_errors.to_csv(errorsfilename)
 
+def plotOutput(targetTensors, outputTensors):
+
+    numDims = len(targetTensors[0])
+
+    colorList = ['b', 'g', 'r', 'k', 'c', 'm']
+    plt.figure()
+
+    for i in range(numDims):
+        currentColor = colorList[i%len(colorList)]
+        plt.plot(torch.cat(targetTensors, dim=1)[i].numpy(), currentColor+':')
+        plt.plot(torch.cat(outputTensors, dim=1).data.numpy()[i], currentColor+'-')
+    
+    plt.draw()
+    plt.pause(0.001)
+
 def run(times_to_call,epochs,mode,precedent='tempTrainingResults',directory='results/'):
 	config_file=mode+'config.ini'
-	for i in range(times_to_call):
-		subprocess.call(['python3', 'TrainRNNfromconfig.py',
-			                         '--config_file',config_file,
-			                         '--baseDirectory',directory,
-			                         '--baseSaveFileName',precedent,
-			                         '--time',str(i),
-			                         '--epochNum',str(epochs)])
 
-	combine_results(directory+precedent+'_'+str(epochs),10)
+	# for i in range(times_to_call):
+
+	stdoutput=subprocess.call(['python3', 'TrainRNNfromconfig.py',
+		                         '--config_file',config_file,
+		                         '--dynamics', mode,
+		                         '--baseDirectory',directory+mode+'/',
+		                         '--baseSaveFileName',precedent,
+		                         '--time',str(times_to_call),
+		                         '--epochNum',str(epochs)])
+
+	# combine_results(directory+mode+'/'+precedent+'_'+str(epochs),10)
+	# plotOutput(targetTensors,outputTensors)
+	# df=pd.DataFrame(lastLosses, columns = ['loss by the end of EPOCH'+str(epochs)]) 
+	# df_means=df.mean()
+	# df_errors=df.std()
+	# print(df_means,df_errors)
 	# read_plot(precedent+'_combined.csv',precedent+'_stderror.csv')
 
 if __name__=='__main__':
-	run(2,100,'step')
+	run(1,10,'ramp',directory='testing/')

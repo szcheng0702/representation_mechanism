@@ -7,9 +7,17 @@ class Config(Namespace):
 	def __init__(self):
 		self.dynamics='step'
 		
+		#alpha=0.1
+		self.dt=0.1
 		self.delayToInput = [20,30,40]
 		self.inputOnLength = [50,60,70,80,90,100]
-		self.timePoints = [400,500,600]
+		# self.timePoints = [400,500,600]
+		self.timePoints = [100,150,200]
+		self.rampPeak=[1]
 
-		self.targetSlope=[0.01,0.05,0.1]
+
+
+		#30-50 time constants
+		# 2 time constants the input
+		# 3-5 for the delay
 
