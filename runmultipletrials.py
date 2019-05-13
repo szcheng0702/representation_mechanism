@@ -54,4 +54,4 @@ def run(times_to_call,epochs,mode,precedent='tempTrainingResults',directory='res
 	# read_plot(precedent+'_combined.csv',precedent+'_stderror.csv')
 
 if __name__=='__main__':
-	run(1,10,'ramp',directory='testing/')
+	run(10,100,'ramp',directory='testing/')
