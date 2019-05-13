@@ -208,14 +208,9 @@ def run_singletrial(config,ithrun):
 
     print('Training network')
 
-
     #write input information
     inputarg_name=['delayToInput','inputOnLength','timePoints','rampPeak']
     inputarg_value=[delayToInput,inputOnLength,timePoints,rampPeak]
-
-    with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
-        wr = csv.writer(lossFile, delimiter='\t')
-        wr.writerows(zip(inputarg_name, inputarg_value))
 
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
@@ -283,7 +278,7 @@ def run_singletrial(config,ithrun):
     list_of_tuples=list(zip(all_lossesX, all_losses))
 
     df = pd.DataFrame(list_of_tuples, columns = ['Iteration', 'MSELoss']) 
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
 
     print('Average training loss =', np.mean(all_losses))
     # plotScatter(all_lossesX, all_losses)
@@ -292,7 +287,7 @@ def run_singletrial(config,ithrun):
     #         pickle.dump(inputs, output, pickle.HIGHEST_PROTOCOL)
     #         pickle.dump()
 
-    with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
+    with open(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
         wr = csv.writer(lossFile, delimiter='\t')
         wr.writerows(zip(inputarg_name, inputarg_value))
 
@@ -311,9 +306,12 @@ def run_multipletrials_samesetting(config,args):
         outputTensors.append(outputTensor)
         lastLosses.append(lastloss)
 
+        # plot the last trial only
+        if i==args.time-1:
+            plotOutput([targetTensor],[outputTensor],args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(args.time)+'trials.png')
+
     df=pd.DataFrame({'hiddenUnit:'+str(args.hiddenUnitNum):lastLosses})
 
-    plotOutput(targetTensors,outputTensors,)
 
     return df
 
