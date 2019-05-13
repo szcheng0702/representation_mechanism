@@ -67,7 +67,7 @@ parser.add('--dynamics',type=str,default='step',metavar='D',
 #                     help='where to save statistics for multiple trial outputs')
 
 def save_checkpoint(args,state, currentIter,ithrun):
-    file_name = args.baseDirectory+args.baseSaveFileName+'_'+str(currentIter)+'_'+str(ithrun)
+    file_name = args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(currentIter)+'_'+str(ithrun)
     torch.save(state, file_name)
 
 def timeSince(since):
