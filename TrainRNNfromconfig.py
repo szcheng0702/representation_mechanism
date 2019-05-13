@@ -86,6 +86,11 @@ def plotScatter(dataX, dataY):
 
 # plotOutput takes tensors as an input and plots target and output
 def plotOutput(targetTensors, outputTensors,figfilename):
+    if targetTensors[0].is_cuda:
+        targetTensors=[targetTensor.cpu() for targetTensor in targetTensors]
+
+    if outputTensors[0].is_cuda:
+        outputTensors=[outputTensor.cpu() for outputTensor in outputTensors]
 
     numDims = len(targetTensors[0])
 
@@ -216,6 +221,7 @@ def run_singletrial(config,ithrun):
     for iter in range(lastSavedIter+1, args.epochNum + 1):
         inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
         inputTensor = Variable(inputTensor).to(device)
+        targetTensor=targetTensor.to(device)
         # targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
         
         optimizer.zero_grad()
@@ -237,7 +243,7 @@ def run_singletrial(config,ithrun):
 
         # Print iter number, loss, name and guess
         if iter % save_loss_every == 0:
-            current_avg_loss = current_loss.data.numpy()/save_loss_every
+            current_avg_loss = current_loss.cpu().data.numpy()/save_loss_every
             pLoss = loss.cpu()
             all_losses.append(pLoss.data.numpy())
             all_lossesX.append(iter)

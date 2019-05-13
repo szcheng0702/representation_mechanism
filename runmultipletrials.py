@@ -37,7 +37,7 @@ def run(times_to_call,epochs,mode,precedent='tempTrainingResults',directory='res
 
 	# for i in range(times_to_call):
 
-	stdoutput=subprocess.call(['python3', 'TrainRNNfromconfig.py',
+	stdoutput=subprocess.call(['python36', 'TrainRNNfromconfig.py',
 		                         '--config_file',config_file,
 		                         '--dynamics', mode,
 		                         '--baseDirectory',directory+mode+'/',
@@ -54,4 +54,4 @@ def run(times_to_call,epochs,mode,precedent='tempTrainingResults',directory='res
 	# read_plot(precedent+'_combined.csv',precedent+'_stderror.csv')
 
 if __name__=='__main__':
-	run(10,100,'ramp',directory='testing/')
+	run(30,100,'ramp',directory='results/')
