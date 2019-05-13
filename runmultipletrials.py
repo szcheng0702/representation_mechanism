@@ -31,20 +31,6 @@ def combine_results(csvfile_precendent,num):
 	df_means.to_csv(outputname)
 	df_errors.to_csv(errorsfilename)
 
-def plotOutput(targetTensors, outputTensors):
-
-    numDims = len(targetTensors[0])
-
-    colorList = ['b', 'g', 'r', 'k', 'c', 'm']
-    plt.figure()
-
-    for i in range(numDims):
-        currentColor = colorList[i%len(colorList)]
-        plt.plot(torch.cat(targetTensors, dim=1)[i].numpy(), currentColor+':')
-        plt.plot(torch.cat(outputTensors, dim=1).data.numpy()[i], currentColor+'-')
-    
-    plt.draw()
-    plt.pause(0.001)
 
 def run(times_to_call,epochs,mode,precedent='tempTrainingResults',directory='results/'):
 	config_file=mode+'config.ini'

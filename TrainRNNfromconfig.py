@@ -85,7 +85,7 @@ def plotScatter(dataX, dataY):
     plt.show(0.001)
 
 # plotOutput takes tensors as an input and plots target and output
-def plotOutput(targetTensors, outputTensors):
+def plotOutput(targetTensors, outputTensors,figfilename):
 
     numDims = len(targetTensors[0])
 
@@ -97,9 +97,11 @@ def plotOutput(targetTensors, outputTensors):
         plt.plot(torch.cat(targetTensors, dim=1)[i].numpy(), currentColor+':')
         plt.plot(torch.cat(outputTensors, dim=1).data.numpy()[i], currentColor+'-')
 
-    plt.show()
-    plt.pause(3)
-    plt.close()
+    # plt.show()
+    # plt.pause(3)
+    # plt.close()
+
+    plt.savefig(figfilename)
     
     # plt.draw()
     # plt.pause(0.001)
@@ -311,7 +313,7 @@ def run_multipletrials_samesetting(config,args):
 
     df=pd.DataFrame({'hiddenUnit:'+str(args.hiddenUnitNum):lastLosses})
 
-    plotOutput(targetTensors,outputTensors)
+    plotOutput(targetTensors,outputTensors,)
 
     return df
 
