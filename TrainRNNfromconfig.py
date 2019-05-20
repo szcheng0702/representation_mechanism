@@ -17,6 +17,8 @@ import GenerateDiffDynamics
 from config import Config#for input
 import random
 import pickle
+from mpl_toolkits import mplot3d
+
 getBatch = GenerateDiffDynamics.TargetBatch
 
 import pdb
@@ -67,7 +69,7 @@ parser.add('--dynamics',type=str,default='step',metavar='D',
 #                     help='where to save statistics for multiple trial outputs')
 
 def save_checkpoint(args,state, currentIter,ithrun):
-    file_name = args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(currentIter)+'_'+str(ithrun)
+    file_name = args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(currentIter)+'_'+str(ithrun)
     torch.save(state, file_name)
 
 def timeSince(since):
@@ -92,38 +94,46 @@ def plotOutput(targetTensors, outputTensors,figfilename):
     if outputTensors[0].is_cuda:
         outputTensors=[outputTensor.cpu() for outputTensor in outputTensors]
 
-    numDims = len(targetTensors[0])
+    batch_size = len(targetTensors[0])
+    numDims=targetTensors[0].size(2)
 
     colorList = ['b', 'g', 'r', 'k', 'c', 'm']
-    plt.figure()
 
-    for i in range(numDims):
-        currentColor = colorList[i%len(colorList)]
-        plt.plot(torch.cat(targetTensors, dim=1)[i].numpy(), currentColor+':')
-        plt.plot(torch.cat(outputTensors, dim=1).data.numpy()[i], currentColor+'-')
+    for j in range(numDims):
+        target_currDim=[targetTensor[:,:,j] for targetTensor in targetTensors]
+        output_currDim=[outputTensor[:,:,j] for outputTensor in outputTensors]
+
+        plt.figure()
+        for i in range(batch_size):
+            currentColor = colorList[i%len(colorList)]
+            plt.plot(torch.cat(target_currDim, dim=1)[i].numpy(), currentColor+':')
+            plt.plot(torch.cat(output_currDim, dim=1).data.numpy()[i], currentColor+'-')
+    
+        plt.savefig(figfilename.replace('.png','dim'+str(j+1)+'.png'))
+
+    # if numDims==2:
+    #     target_numDim1=[targetTensor[:,:,0] for targetTensor in targetTensors]
+    #     target_numDim2=[targetTensor[:,:,1] for targetTensor in targetTensors]
+    #     timePoints=targetTensors[0].size(1)
+    #     X=np.tile(np.arange(timePoints),(batch_size,1))
+    #     pdb.set_trace()
+    #     plt.figure()
+    #     ax = plt.axes(projection='3d')
+    #     ax.plot(np.arange(timePoints),targetTensors[0][0,:,0].numpy(),targetTensors[0][0,:,1].numpy())
+
+    #     ax.set_title('surface')
+    #     plt.show()
 
     # plt.show()
     # plt.pause(3)
     # plt.close()
 
-    plt.savefig(figfilename)
+
+    # plt.savefig(figfilename)
     
     # plt.draw()
     # plt.pause(0.001)
 
-
-# def generateTestSet(targetError):
-#     plt.figure()
-#     plt.plot(lossesToPlot)
-    
-#     plt.draw()
-#     plt.pause(0.001)
-
-# def LoadSavedNetwork(args):
-#    # Load network
-
-
-#     return
 
 
 def signal_arguments(config):
@@ -192,7 +202,7 @@ def run_singletrial(config,ithrun):
         optimizer.load_state_dict(checkpoint['optimizer'])
 
 
-    save_loss_every = 5
+    save_loss_every = 10
     plot_every = math.floor(0.1*args.epochNum)
 
     # Keep track of losses for plotting
@@ -233,6 +243,7 @@ def run_singletrial(config,ithrun):
             output.append(outputState)
         o = torch.cat(output,1)
         oo = o.reshape(args.batch_size,timePoints,args.outputSize)
+
 
         loss = criterion(oo, targetTensor)
         loss.backward()
@@ -284,7 +295,7 @@ def run_singletrial(config,ithrun):
     list_of_tuples=list(zip(all_lossesX, all_losses))
 
     df = pd.DataFrame(list_of_tuples, columns = ['Iteration', 'MSELoss']) 
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
 
     print('Average training loss =', np.mean(all_losses))
     # plotScatter(all_lossesX, all_losses)
@@ -293,16 +304,21 @@ def run_singletrial(config,ithrun):
     #         pickle.dump(inputs, output, pickle.HIGHEST_PROTOCOL)
     #         pickle.dump()
 
-    with open(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
+    with open(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
         wr = csv.writer(lossFile, delimiter='\t')
         wr.writerows(zip(inputarg_name, inputarg_value))
 
     return targetTensor,oo,all_losses[-1]
 
-def run_multipletrials_samesetting(config,args):
+def run_multipletrials_samesetting(config,args,option):
     targetTensors=[]
     outputTensors=[]
     lastLosses=[]
+
+    if option=='hidden':
+        opt_str='_hidden'+str(args.hiddenUnitNum)
+    elif option=='dim':
+        opt_str='_numdim'+str(args.inputSize)
 
     for i in range(args.time):
         print('Trial {}\n'.format(i+1))
@@ -314,9 +330,9 @@ def run_multipletrials_samesetting(config,args):
 
         # plot the last trial only
         if i==args.time-1:
-            plotOutput([targetTensor],[outputTensor],args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_'+str(args.time)+'trials.png')
+            plotOutput([targetTensor],[outputTensor],args.baseDirectory+args.baseSaveFileName+opt_str+'_'+str(args.time)+'trials.png')
 
-    df=pd.DataFrame({'hiddenUnit:'+str(args.hiddenUnitNum):lastLosses})
+    df=pd.DataFrame({opt_str.lstrip('_'):lastLosses})
 
 
     return df
@@ -326,18 +342,34 @@ def run_multiple_diffhiddenUnit(hiddenUnitLst,config,args):
     for i in range(len(hiddenUnitLst)):
         args.hiddenUnitNum=hiddenUnitLst[i]
         print('Hidden Units: {}'.format(args.hiddenUnitNum))
-        df_current=run_multipletrials_samesetting(config,args)
+        df_current=run_multipletrials_samesetting(config,args,'hidden')
         df_lst.append(df_current)
 
     df=pd.concat(df_lst,axis=1)
     df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffHidden.csv')
 
-  
+
+def run_multiple_diffdim(dimLst,config,args):
+    df_lst=[]
+    for i in range(len(dimLst)):
+        args.inputSize=dimLst[i]
+        args.outputSize=dimLst[i]
+        print('num of Dim: {}'.format(args.inputSize))
+        df_current=run_multipletrials_samesetting(config,args,'dim')
+        df_lst.append(df_current)
+
+    df=pd.concat(df_lst,axis=1)
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffDim.csv',index=False)
+
+
+
 
 if __name__=='__main__':
     config=Config()
     args = parser.parse_args()
-    hiddenUnitLst=range(100,450,50)
-    run_multiple_diffhiddenUnit(hiddenUnitLst,config,args)
+    # hiddenUnitLst=range(100,450,50)
+    #dimLst=range(1,6)
+    dimLst=range(1,3)
+    run_multiple_diffdim(dimLst,config,args)
 
 

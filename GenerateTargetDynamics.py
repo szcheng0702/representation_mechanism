@@ -10,6 +10,7 @@ import os
 import time
 import math
 import csv
+import pdb
 
 def StepTargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, timePoints):
     useValVec = np.linspace(-1,1, testSetSize)
@@ -94,7 +95,8 @@ def DefineOutputTarget(targetVal, delayToInput, timePoints,dt):
     targetSig[:delayToInput+1]=ComputeDecay(targetVal,dt,delayToInput)
     targetSig[(delayToInput+1):timePoints] = targetVal
     targetTensor = torch.zeros(timePoints, 1, 1)
-    targetTensor[(delayToInput):,0,0] = targetVal
+    # targetTensor[(delayToInput):,0,0] = targetVal
+    targetTensor[:,:,0] = torch.from_numpy(targetSig)
     return targetSig, targetTensor
 
 def GenerateOneDimensionalStepTarget(useVal, delayToInput, inputOnLength, timePoints,dt):

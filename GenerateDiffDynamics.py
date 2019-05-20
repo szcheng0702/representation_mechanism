@@ -32,7 +32,6 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
     elif outputType=='ramp':
         targetSig, targetTensor = DefineOutputRampTarget(useVal/10, rampPeak, delayToInput, timePoints,dt)
 
-
     return inputSig, targetSig, inputTensor, targetTensor
 
 def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
@@ -90,12 +89,12 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
     inputTensor, targetTensor = \
         TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
     # Continue:
-    
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
             TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
+
     return  inputTensor, targetTensor
 
 def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
@@ -115,7 +114,10 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
+
     return  inputTensor, targetTensor
+
+
 
 # delayToInput = 20
 # inputOnLength = 50
