@@ -259,7 +259,9 @@ def run_singletrial(config,ithrun):
             all_losses.append(pLoss.data.numpy())
             all_lossesX.append(iter)
             current_loss = 0
-            print('Iteration %d Time (%s) Average loss: %.4f ' % (iter, timeSince(start), current_avg_loss))
+
+            if iter % (5 * save_loss_every)==0:
+                print('Iteration %d Time (%s) Average loss: %.4f ' % (iter, timeSince(start), current_avg_loss))
 
             # with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv', 'w') as lossFile:
             #     wr = csv.writer(lossFile, delimiter='\t')
@@ -307,6 +309,8 @@ def run_singletrial(config,ithrun):
     with open(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
         wr = csv.writer(lossFile, delimiter='\t')
         wr.writerows(zip(inputarg_name, inputarg_value))
+
+    np.savez(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_arrays.npz',target=targetTensor.numpy(),out=oo.detach().numpy())
 
     return targetTensor,oo,all_losses[-1]
 
@@ -368,8 +372,8 @@ if __name__=='__main__':
     config=Config()
     args = parser.parse_args()
     # hiddenUnitLst=range(100,450,50)
-    #dimLst=range(1,6)
-    dimLst=range(1,3)
+    dimLst=range(1,6)
+    # dimLst=range(1,3)
     run_multiple_diffdim(dimLst,config,args)
 
 
