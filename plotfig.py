@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import pdb
+import numpy as np
+import csv
 
 def combine_results_plot(csvfile_precendent,option):
 	# modes=['step','ramp']
@@ -75,7 +77,7 @@ def combine_plot_crosstrials(csvfile_precendent,numTrials,dimLst,epochNum):
 
 
 	plt.figure()
-	df_means.plot(yerr=df_errors,capsize=2)
+	df_means.plot(yerr=df_errors,capsize=2,errorevery=2)
 	plt.savefig(csvfile_precendent+'dim.png')
 
 
@@ -84,8 +86,7 @@ def combine_plot_crosstrials(csvfile_precendent,numTrials,dimLst,epochNum):
 
 
 
-
-dimLst=range(1,3)
-combine_plot_crosstrials('./testing/step/dim/fixedHiddenTrainingResults_hidden250',2,dimLst,200)
+dimLst=range(1,6)
+combine_plot_crosstrials('./results/step/dim/hidden200_epo4000/fixedHiddenTrainingResults_hidden200',5,dimLst,4000)
 # combine_results_plot('dim/tempTrainingResults_100','dim')
 # /Users/sizhucheng/Desktop/representation_mechanism/results/ramp/tempTrainingResults_100_LastLossDiffHidden.csv
