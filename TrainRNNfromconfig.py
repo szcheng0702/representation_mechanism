@@ -310,6 +310,10 @@ def run_singletrial(config,ithrun):
         wr = csv.writer(lossFile, delimiter='\t')
         wr.writerows(zip(inputarg_name, inputarg_value))
 
+    if args.cuda:
+        targetTensor=targetTensor.cpu()
+        oo=oo.cpu()
+        
     np.savez(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_arrays.npz',target=targetTensor.numpy(),out=oo.detach().numpy())
 
     return targetTensor,oo,all_losses[-1]

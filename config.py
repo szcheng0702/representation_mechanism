@@ -9,10 +9,13 @@ class Config(Namespace):
 		
 		#alpha=0.1
 		self.dt=0.1
-		self.delayToInput = [20,30,40]
-		self.inputOnLength = [50,60,70,80,90,100]
-		# self.timePoints = [400,500,600]
-		self.timePoints = [100,150,200]
+		# self.delayToInput = [20,30,40]
+		# self.inputOnLength = [50,60,70,80,90,100]
+		# # self.timePoints = [400,500,600]
+		# self.timePoints = [100,150,200]
+		self.delayToInput = [30]
+		self.inputOnLength = [80]
+		self.timePoints = [200]
 		self.rampPeak=[1]
 
 
