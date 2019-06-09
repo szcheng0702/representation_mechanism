@@ -57,6 +57,8 @@ parser.add('--resume', action='store_true', default=False,
                     help='resume training')
 parser.add('--dropUnit', type=int, default=None, metavar='N',
                     help='set selected hidden unit to zero')
+parser.add('--scheduler', action='store_true', default=False,
+                    help='Use scheduler in training or not')
 parser.add('--gpu_idx', type=int, default=0, metavar='N',
                     help='set GPU index')
 parser.add('--save_every', type=int, default=1000, metavar='N',
@@ -201,6 +203,11 @@ def run_singletrial(config,ithrun):
     if args.resume:
         optimizer.load_state_dict(checkpoint['optimizer'])
 
+    if args.scheduler:
+        if args.resume:
+            scheduler.load_state_dict(checkpoint['scheduler'])
+        scheduler=optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, verbose=True, threshold=0.0001, min_lr=1e-6, eps=1e-08)
+
 
     save_loss_every = 10
     plot_every = math.floor(0.1*args.epochNum)
@@ -222,6 +229,7 @@ def run_singletrial(config,ithrun):
     args.save_every=min(args.save_every,args.epochNum)
 
     print('Training network')
+    network.train() #add this line to make sure the network is in "training" mode
 
     #write input information
     inputarg_name=['delayToInput','inputOnLength','timePoints','rampPeak']
@@ -288,7 +296,13 @@ def run_singletrial(config,ithrun):
                 'timePoints':timePoints,
                 'rampPeak':rampPeak
                 }
+            if args.scheduler:
+                state['scheduler']=scheduler.state_dict()
+
             save_checkpoint(args,state, iter,ithrun)
+
+        if args.scheduler:
+            scheduler.step(current_avg_loss)
 
     print('Done training network')
     # plotOutput([targetTensor],[oo])

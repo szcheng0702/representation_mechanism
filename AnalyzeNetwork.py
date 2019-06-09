@@ -52,6 +52,7 @@ class AnalyzeNetwork():
 
     def RunMultiDimTestSet(self, perDimTestSetSize, dimNum):
         optimizer = optim.Adam(self.network.parameters(), 0.01) # HACK Should be replaced by no gradient block
+        self.network.eval() #add this line to make sure the network is in "evaluation" mode
         delayToInput = 20
         inputOnLength = 50
         timePoints = 400
