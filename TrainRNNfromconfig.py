@@ -18,8 +18,9 @@ from config import Config#for input
 import random
 import pickle
 from mpl_toolkits import mplot3d
-
+from AnalyzeNetwork import *
 getBatch = GenerateDiffDynamics.TargetBatch
+getCorrelatedBatch=GenerateDiffDynamics.TargetCorrelatedBatch
 
 import pdb
 
@@ -45,6 +46,10 @@ parser.add('--inputSize', type=int, default=1, metavar='N',
                     help='size of input dimension')
 parser.add('--outputSize', type=int, default=1, metavar='N',
                     help='size of output dimension')
+parser.add('--randomDim', type=int, default=None, metavar='N',
+                    help='number of dimensions which has no correalation. It is always smaller than args.inputSize')
+parser.add('--corrMultiplier', type=float, default=None, metavar='N',
+                    help='correalation multiplier. Used in correlation case only')
 parser.add('--hiddenUnitNum', type=int, default=100, metavar='N',
                     help='number of hidden units')
 parser.add('--dt', type=float, default=0.1, metavar='N',
@@ -59,6 +64,8 @@ parser.add('--dropUnit', type=int, default=None, metavar='N',
                     help='set selected hidden unit to zero')
 parser.add('--scheduler', action='store_true', default=False,
                     help='Use scheduler in training or not')
+parser.add('--plotAllTrial', action='store_true', default=False,
+                    help='Plot the diagram for all trials in the same hyperparameter settings. If false, plot the last trial only.')
 parser.add('--gpu_idx', type=int, default=0, metavar='N',
                     help='set GPU index')
 parser.add('--save_every', type=int, default=1000, metavar='N',
@@ -67,8 +74,7 @@ parser.add('--noise_std', type=float, default=0, metavar='N',
                     help='set noise value')
 parser.add('--dynamics',type=str,default='step',metavar='D',
                     help='output dynamics type, choose from [step,ramp,sinusoidal]')
-# parser.add('--StatsSaveFileName', type=str, default='tempStats', metavar='N',
-#                     help='where to save statistics for multiple trial outputs')
+
 
 def save_checkpoint(args,state, currentIter,ithrun):
     file_name = args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(currentIter)+'_'+str(ithrun)
@@ -146,7 +152,7 @@ def signal_arguments(config):
 
     return delayToInput,inputOnLength,timePoints,rampPeak
 
-def run_singletrial(config,ithrun):
+def run_singletrial(config,args,ithrun):
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -237,7 +243,10 @@ def run_singletrial(config,ithrun):
 
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
-        inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
+        if args.randomDim and args.corrMultiplier: 
+            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,rampPeak)
+        else:
+            inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
         inputTensor = Variable(inputTensor).to(device)
         targetTensor=targetTensor.to(device)
         # targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
@@ -341,18 +350,22 @@ def run_multipletrials_samesetting(config,args,option):
         opt_str='_hidden'+str(args.hiddenUnitNum)
     elif option=='dim':
         opt_str='_numdim'+str(args.inputSize)
+    else:
+        opt_str='_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)
+ 
 
     for i in range(args.time):
         print('Trial {}\n'.format(i+1))
-        targetTensor,outputTensor,lastloss=run_singletrial(config,i)
+        targetTensor,outputTensor,lastloss=run_singletrial(config,args,i)
 
         targetTensors.append(targetTensor)
         outputTensors.append(outputTensor)
         lastLosses.append(lastloss)
 
         # plot the last trial only
-        if i==args.time-1:
-            plotOutput([targetTensor],[outputTensor],args.baseDirectory+args.baseSaveFileName+opt_str+'_'+str(args.time)+'trials.png')
+        if not args.plotAllTrial:
+            if i==args.time-1:
+                plotOutput([targetTensor],[outputTensor],args.baseDirectory+args.baseSaveFileName+opt_str+'_'+str(args.time)+'trials.png')
 
     df=pd.DataFrame({opt_str.lstrip('_'):lastLosses})
 
@@ -390,8 +403,11 @@ if __name__=='__main__':
     config=Config()
     args = parser.parse_args()
     # hiddenUnitLst=range(100,450,50)
-    dimLst=range(1,6)
-    # dimLst=range(1,3)
-    run_multiple_diffdim(dimLst,config,args)
+    # dimLst=range(1,6)
+    # run_multiple_diffdim(dimLst,config,args)
+    # run_multipletrials_samesetting(config,args,'')
+    instance=AnalyzeNetwork(args)
+    instance.LoadModel('testing/ramp/dim/hidden200_corr')
+    instance.RunMultiDimTestSet(10,3,'step')
 
 

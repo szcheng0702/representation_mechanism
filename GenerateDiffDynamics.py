@@ -59,6 +59,17 @@ def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,o
     #print(inputTensor.size())
     return  inputTensor, targetTensor
 
+def GenerateFactorCorrleated(numDim,randomDim,batchSize,correlation_multiplier):
+    firstdim=np.random.uniform(-1,1,(1, batchSize))
+
+    final_array_lsts=[firstdim]
+    for dimNum in range(1,numDim-randomDim):
+        nextdim=firstdim*(correlation_multiplier**dimNum)
+        final_array_lsts.append(nextdim)
+
+
+    return np.concatenate(final_array_lsts,axis=0)
+
 def get_validSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints):
 
     PeakReachTime=abs((rampPeak/targetSlopeArray*10).astype(int))+delayToInput #+10: loose the bound
@@ -70,6 +81,7 @@ def get_validSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints):
     for i in range(need2change.shape[0]):
         reachtime=need2change[i]
         while (reachtime+10)>timePoints: #+10: loose the bound
+
             targetSlope=np.random.uniform(-1,1)
             reachtime=abs(int(rampPeak/targetSlope*10))+delayToInput
 
@@ -78,12 +90,61 @@ def get_validSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints):
 
     return targetSlopeArray
 
+#optimize later
+def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier):
+    numDim=targetSlopeArray.shape[0]
+
+    PeakReachTime=abs((rampPeak/targetSlopeArray*10).astype(int))+delayToInput #+10: loose the bound
+
+
+    need2change=PeakReachTime[(PeakReachTime+10)>timePoints]
+    indx=(PeakReachTime+10>timePoints).nonzero()
+
+    for i in range(need2change.shape[0]):
+        reachtime=PeakReachTime[:,indx[1][i]]
+        while np.count_nonzero(reachtime+10>timePoints)!=0:
+            currArray=GenerateFactorCorrleated(numDim,randomDim,1,correlation_multiplier)
+            reachtime=abs(int(rampPeak/currArray*10))+delayToInput
+
+        targetSlopeArray[:,indx[1][i]]=currArray
+
+    return targetSlopeArray
+
+
 
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
     useValArray = np.random.uniform(-1,1,(numDim, batchSize))
 
     if outputType=='ramp':
         useValArray=get_validSlopeArray(useValArray,rampPeak,delayToInput,timePoints)
+
+    # Start first element 
+    inputTensor, targetTensor = \
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+    # Continue:
+    for ii in range(1, batchSize):
+        curInputTensor, curTargetTensor = \
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+        inputTensor = torch.cat((inputTensor, curInputTensor), 0)
+        targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
+
+    return  inputTensor, targetTensor
+
+
+
+def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,rampPeak=None):
+    
+    random_useValArray = np.random.uniform(-1,1,(randomDim, batchSize))
+
+    #correlated_ValArray
+    correlated_ValArray=GenerateFactorCorrleated(numDim,randomDim,batchSize,correlation_multiplier)
+
+        
+    if outputType=='ramp':
+        random_useValArray=get_validSlopeArray(random_useValArray,rampPeak,delayToInput,timePoints)
+        correlated_ValArray=get_validCorrelatedSlopeArray(correlated_ValArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier)
+
+    useValArray=np.concatenate((correlated_ValArray,random_useValArray),axis=0)
 
     # Start first element 
     inputTensor, targetTensor = \
@@ -121,10 +182,10 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
 
 # delayToInput = 20
 # inputOnLength = 50
-# timePoints = 100
-# # dt=0.1
+# timePoints = 200 #100
+# dt=0.1
 
-# numDim=2
+# numDim=3
 # batchSize=10
 # useValArray = np.random.uniform(-1,1,(numDim, batchSize))
-# get_validSlopeArray(useValArray,1,delayToInput,timePoints)
+# TargetCorrelatedBatch(batchSize, numDim, 1,delayToInput, inputOnLength, timePoints,dt,'ramp',0.2,rampPeak=1)
