@@ -100,6 +100,6 @@ def DefineOutputTarget(targetVal, delayToInput, timePoints,dt):
     return targetSig, targetTensor
 
 def GenerateOneDimensionalStepTarget(useVal, delayToInput, inputOnLength, timePoints,dt):
-    inputSig, inputTensor = DefineInputSignals(useVal, delayToInput, inputOnLength, timePoints)
+    inputSig, inputTensor = DefineInputSignals(useVal, delayToInput, inputOnLength,timePoints)
     targetSig, targetTensor = DefineOutputTarget(useVal, delayToInput, timePoints)
     return inputSig, targetSig, inputTensor, targetTensor

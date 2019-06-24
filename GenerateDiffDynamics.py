@@ -25,7 +25,7 @@ def DefineOutputRampTarget(targetSlope,targetPeak,delayToInput,timePoints,dt):
 
 
 def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
-    inputSig, inputTensor = DefineInputSignals(useVal, delayToInput, inputOnLength, timePoints)
+    inputSig, inputTensor = DefineInputSignals(useVal, delayToInput, inputOnLength,timePoints)
 
     if outputType=='step':
         targetSig, targetTensor = DefineOutputTarget(useVal, delayToInput,timePoints,dt)
@@ -55,16 +55,19 @@ def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,o
     inputTensor = torch.transpose(inputTensor, 0, 1)
     targetTensor = torch.transpose(targetTensor,0, 1)
 
+
     #print('Input tensor size:') #' %d' % (inputTensor.size()))
     #print(inputTensor.size())
     return  inputTensor, targetTensor
 
-def GenerateFactorCorrleated(numDim,randomDim,batchSize,correlation_multiplier):
+def GenerateFactorCorrleated(numDim,randomDim,batchSize,correlation_multiplier,add_noise=True):
     firstdim=np.random.uniform(-1,1,(1, batchSize))
 
     final_array_lsts=[firstdim]
     for dimNum in range(1,numDim-randomDim):
         nextdim=firstdim*(correlation_multiplier**dimNum)
+        if add_noise:
+            nextdim+=0.1*np.random.uniform(-1,1,(1, batchSize))
         final_array_lsts.append(nextdim)
 
 
@@ -167,11 +170,11 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
 
 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,outputType,rampPeak)
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
 
     for ii in range(1, testSetSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,outputType,rampPeak)
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 

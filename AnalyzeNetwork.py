@@ -13,72 +13,87 @@ import math
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import pdb
+from config import Config#for input
+import random
 
 from RateUnitNetwork import RateUnitNetwork
 import GenerateDiffDynamics
-# getStepBatch = GenerateDiffDynamics.TargetBatch
-# getStepTestSet = GenerateDiffDynamics.TargetOneDimTestSet
+
 getMultiDimTestSet = GenerateDiffDynamics.TargetMultiDimTestSet
+getRandomBatch=GenerateDiffDynamics.TargetBatch
 
-class AnalyzeNetwork():
-    def __init__(self,args):
-        self.args=args
-        return
+
+def signal_arguments(config):
+    delayToInput = random.choice(config.delayToInput)
+    inputOnLength = random.choice(config.inputOnLength)
+    timePoints = random.choice(config.timePoints)
+    rampPeak=random.choice(config.rampPeak)
+
+    return delayToInput,inputOnLength,timePoints,rampPeak
+
     
-    def LoadModel(self, saved_model_path):
-        if saved_model_path:
-            if os.path.isfile(saved_model_path):
-                self.args = argparse.Namespace()
-                print("=> loading checkpoint '{}'".format(saved_model_path))
-                checkpoint = torch.load(saved_model_path, map_location=lambda storage, loc: storage)
-                
-                self.args.hiddenUnitNum = checkpoint['hiddenUnitNum']
-                self.args.inputSize = checkpoint['inputSize']
-                self.args.outputSize = checkpoint['outputSize']
-                self.args.dt = checkpoint['dt']
-                self.args.numVariables = checkpoint['numVariables']
-                self.args.noise_std = checkpoint['noise_std']
-                self.args.dropUnit = None
-                #self.args.dropUnit = checkpoint['dropUnit']
+def LoadModel(saved_model_path):
+    if saved_model_path:
+        if os.path.isfile(saved_model_path):
+            # args = argparse.Namespace()
+            print("=> loading checkpoint '{}'".format(saved_model_path))
+            checkpoint = torch.load(saved_model_path, map_location=lambda storage, loc: storage)
+            
+            hiddenUnitNum = checkpoint['hiddenUnitNum']
+            inputSize = checkpoint['inputSize']
+            outputSize = checkpoint['outputSize']
+            dt = checkpoint['dt']
+            numVariables = checkpoint['numVariables']
+            noise_std = checkpoint['noise_std']
+            # dropUnit = None
+            # #dropUnit = checkpoint['dropUnit']
 
-                network = RateUnitNetwork(
-                    self.args.inputSize, self.args.hiddenUnitNum, self.args.outputSize, self.args.dt, self.args.noise_std)
-                network.load_state_dict(checkpoint['state_dict'])
-                print("=> loaded model '{}'".format(saved_model_path))
-                
-        self.network = network
-        print(network)
-        return
+            network = RateUnitNetwork(
+                inputSize, hiddenUnitNum, outputSize, dt, noise_std)
+            network.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded model '{}'".format(saved_model_path))
+            
+    # self.network = network
+    # print(network)
+    return network
 
-    def RunMultiDimTestSet(self, perDimTestSetSize, dimNum,outputType):
-        # optimizer = optim.Adam(self.network.parameters(), 0.01) # HACK Should be replaced by no gradient block
-        self.network.eval() #add this line to make sure the network is in "evaluation" mode
-        delayToInput = 20
-        inputOnLength = 50
-        timePoints = 400
-        device = 'cpu'
+def RunMultiDimTestSet(network, config,args):
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
 
-        inputTensor, targetTensor = getMultiDimTestSet(perDimTestSetSize, dimNum, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None)
+    if args.cuda:
+        torch.cuda.set_device(args.gpu_idx)
+        print('Running on gpu idx: ')
+        print(args.gpu_idx)
 
-        pdb.set_trace()
-        inputTensor = Variable(inputTensor).to(device)
-        print(targetTensor.shape)
-        #targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
-        optimizer.zero_grad()
-        
-        testSetSize = perDimTestSetSize ** dimNum
-        hiddenState = Variable(torch.randn(testSetSize, self.args.hiddenUnitNum)*1e-2).to(device)
-        output = []
+    device = torch.device('cuda' if args.cuda else 'cpu')
+
+    network.eval() #add this line to make sure the network is in "evaluation" mode
+    dimNum=args.inputSize
+    perDimTestSetSize=args.perDimTestSetSize
+    outputType=args.dynamics
+    testSetSize=args.testSetSize
+    delayToInput,inputOnLength,timePoints,rP=signal_arguments(config)
+
+
+    # inputTensor, targetTensor = getMultiDimTestSet(perDimTestSetSize, dimNum, delayToInput, inputOnLength, timePoints,args.dt,outputType,rampPeak=None)
+    inputTensor, targetTensor=getRandomBatch(testSetSize, dimNum, delayToInput, inputOnLength, timePoints,args.dt,outputType,rampPeak=rP)
+
+    inputTensor = Variable(inputTensor).to(device)
+
+    #targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
+
+    
+    # testSetSize = perDimTestSetSize ** dimNum
+    hiddenState = Variable(torch.randn(testSetSize, args.hiddenUnitNum)*1e-2).to(device)
+    output = []
+    with torch.no_grad():
         for i in range(0,timePoints):
-            outputState, hiddenState = self.network(inputTensor[:,i,:], hiddenState)
+            outputState, hiddenState = network(inputTensor[:,i,:], hiddenState)
             output.append(outputState)
         o = torch.cat(output,1)
-        outputTensor = o.reshape(testSetSize,timePoints,self.args.outputSize)
+        outputTensor = o.reshape(testSetSize,timePoints,args.outputSize)
 
-        return outputTensor, inputTensor, targetTensor
+    return outputTensor, inputTensor, targetTensor
 
-if __name__=='__main__':
-    instance=AnalyzeNetwork()
-    instance.LoadModel('testing/ramp/dim/hidden200_corr')
-    instance.RunMultiDimTestSet(10,3,'step')
 

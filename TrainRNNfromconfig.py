@@ -50,8 +50,12 @@ parser.add('--randomDim', type=int, default=None, metavar='N',
                     help='number of dimensions which has no correalation. It is always smaller than args.inputSize')
 parser.add('--corrMultiplier', type=float, default=None, metavar='N',
                     help='correalation multiplier. Used in correlation case only')
+parser.add('--testSetSize', type=int, default=100, metavar='N',
+                    help='test set size')
 parser.add('--hiddenUnitNum', type=int, default=100, metavar='N',
                     help='number of hidden units')
+parser.add('--perDimTestSetSize', type=int, default=10, metavar='N',
+                    help='perDimTestSetSize')
 parser.add('--dt', type=float, default=0.1, metavar='N',
                     help='time constant')
 parser.add('--noise', type=float, default=0, metavar='N',
@@ -74,7 +78,8 @@ parser.add('--noise_std', type=float, default=0, metavar='N',
                     help='set noise value')
 parser.add('--dynamics',type=str,default='step',metavar='D',
                     help='output dynamics type, choose from [step,ramp,sinusoidal]')
-
+parser.add('--mode',type=str,default='train',metavar='D',
+                    help='task mode, choose from [train,test]')
 
 def save_checkpoint(args,state, currentIter,ithrun):
     file_name = args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(currentIter)+'_'+str(ithrun)
@@ -142,6 +147,84 @@ def plotOutput(targetTensors, outputTensors,figfilename):
     # plt.draw()
     # plt.pause(0.001)
 
+def plot2ndVs1st3rd(targetTensors, outputTensors,figfilename):
+    if targetTensors[0].is_cuda:
+        targetTensors=[targetTensor.cpu() for targetTensor in targetTensors]
+
+    if outputTensors[0].is_cuda:
+        outputTensors=[outputTensor.cpu() for outputTensor in outputTensors]
+
+    batch_size = len(targetTensors[0])
+    numDims=targetTensors[0].size(2)
+
+    colorList = ['b', 'g', 'r', 'k', 'c', 'm']
+
+
+    target_3rdDim=[targetTensor[:,:,2] for targetTensor in targetTensors]
+    target_1stDim=[targetTensor[:,:,0] for targetTensor in targetTensors]
+    output_2ndDim=[outputTensor[:,:,1] for outputTensor in outputTensors]
+
+    plt.figure()
+    for i in range(batch_size):
+        currentColor = colorList[i%len(colorList)]
+        plt.plot(torch.cat(target_1stDim, dim=1)[i].numpy(), currentColor+':')
+        plt.plot(torch.cat(output_2ndDim, dim=1).data.numpy()[i], currentColor+'-')
+
+    plt.savefig(figfilename.replace('.png','2ndvs1stdim.png'))
+
+    plt.figure()
+    for i in range(batch_size):
+        currentColor = colorList[i%len(colorList)]
+        plt.plot(torch.cat(target_3rdDim, dim=1)[i].numpy(), currentColor+':')
+        plt.plot(torch.cat(output_2ndDim, dim=1).data.numpy()[i], currentColor+'-')
+
+    plt.savefig(figfilename.replace('.png','2ndvs3rddim.png'))
+
+def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,figfilename):
+    if targetTensor.is_cuda:
+        targetTensor=targetTensor.cpu()
+
+    if outputTensor.is_cuda:
+        outputTensor=outputTensor.cpu()
+        inputTensor=inputTensor.cpu()
+
+    batch_size = targetTensor.size(0)
+    numDims=targetTensor.size(2)
+
+
+    target_3rdDim=targetTensor[:,timePoint2show,2]
+    target_1stDim=targetTensor[:,timePoint2show,0]
+    input_3rdDim=inputTensor[:,timePoint2show,2]
+    input_1stDim=inputTensor[:,timePoint2show,0] 
+    output_2ndDim=outputTensor[:,timePoint2show,1]
+
+
+    plt.figure()
+    plt.plot(input_1stDim.numpy(),output_2ndDim.numpy())
+    plt.savefig(figfilename.replace('.png','2ndvs1stdiminput.png'))
+
+    plt.figure()
+    plt.plot(input_3rdDim.numpy(),output_2ndDim.numpy())
+    plt.savefig(figfilename.replace('.png','2ndvs3rddiminput.png'))
+
+    fig=plt.figure()
+    ax = fig.gca(projection='3d')
+    ax.set_xlim3d(-1,1)
+    ax.set_ylim3d(-1,1)
+    ax.set_zlim3d(-1,1)
+    ax.plot_trisurf(output_2ndDim.numpy(),target_1stDim.numpy(),target_3rdDim.numpy())
+    plt.savefig(figfilename.replace('.png','3D2ndvsOutputs.png'))
+
+    fig=plt.figure()
+    ax = fig.gca(projection='3d')
+    ax.set_xlim3d(-1,1)
+    ax.set_ylim3d(-1,1)
+    ax.set_zlim3d(-1,1)
+    ax.plot_trisurf(output_2ndDim.numpy(),input_1stDim.numpy(),input_3rdDim.numpy())
+    plt.savefig(figfilename.replace('.png','3D2ndvsInputs.png'))
+
+
+
 
 
 def signal_arguments(config):
@@ -201,7 +284,7 @@ def run_singletrial(config,args,ithrun):
         network = RUN.RateUnitNetwork(args.inputSize, args.hiddenUnitNum, \
             args.outputSize, args.dt, args.noise_std).to(device)
 
-        delayToInput,inputOnLength,timePoints,rampPeak=signal_arguments(config)
+    delayToInput,inputOnLength,timePoints,rampPeak=signal_arguments(config)
 
     optimizer = optim.Adam(network.parameters(), args.learningRate)
     criterion = nn.MSELoss()
@@ -336,8 +419,9 @@ def run_singletrial(config,args,ithrun):
     if args.cuda:
         targetTensor=targetTensor.cpu()
         oo=oo.cpu()
+        inputTensor=inputTensor.cpu()
         
-    np.savez(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_arrays.npz',target=targetTensor.numpy(),out=oo.detach().numpy())
+    np.savez(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_arrays.npz',input=inputTensor.numpy(),target=targetTensor.numpy(),out=oo.detach().numpy())
 
     return targetTensor,oo,all_losses[-1]
 
@@ -405,9 +489,11 @@ if __name__=='__main__':
     # hiddenUnitLst=range(100,450,50)
     # dimLst=range(1,6)
     # run_multiple_diffdim(dimLst,config,args)
-    # run_multipletrials_samesetting(config,args,'')
-    instance=AnalyzeNetwork(args)
-    instance.LoadModel('testing/ramp/dim/hidden200_corr')
-    instance.RunMultiDimTestSet(10,3,'step')
-
+    if args.mode=='train':
+        run_multipletrials_samesetting(config,args,'')
+    if args.mode=='test':
+        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
+        out,inputTensor,target=RunMultiDimTestSet(network,config,args)
+        plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
+        plot3dCorr(inputTensor, target, out,100,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
 

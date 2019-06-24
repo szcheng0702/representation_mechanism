@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import numpy as np
+import pdb
 
 class RateUnitNetwork(nn.Module):
     def __init__(self, inputSize, hiddenUnitNum, outputSize, dt, noise=0):
@@ -26,4 +27,5 @@ class RateUnitNetwork(nn.Module):
             hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput+randomVal))
 
         output = self.h2o(hidden)
+
         return output, hidden
