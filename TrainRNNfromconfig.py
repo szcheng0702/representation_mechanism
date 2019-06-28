@@ -19,6 +19,7 @@ import random
 import pickle
 from mpl_toolkits import mplot3d
 from AnalyzeNetwork import *
+from scipy import stats
 getBatch = GenerateDiffDynamics.TargetBatch
 getCorrelatedBatch=GenerateDiffDynamics.TargetCorrelatedBatch
 
@@ -50,6 +51,9 @@ parser.add('--randomDim', type=int, default=None, metavar='N',
                     help='number of dimensions which has no correalation. It is always smaller than args.inputSize')
 parser.add('--corrMultiplier', type=float, default=None, metavar='N',
                     help='correalation multiplier. Used in correlation case only')
+parser.add('--corrNoise', type=float, default=0, metavar='N',
+                    help='noise multiplier added when generating correlated dimension, so that the correlation dimension becauses\
+                    corrMultiplier*prevDim+corrNoise*U(-1,1). Default:0.1')
 parser.add('--testSetSize', type=int, default=100, metavar='N',
                     help='test set size')
 parser.add('--hiddenUnitNum', type=int, default=100, metavar='N',
@@ -192,27 +196,47 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,figfilenam
     numDims=targetTensor.size(2)
 
 
-    target_3rdDim=targetTensor[:,timePoint2show,2]
-    target_1stDim=targetTensor[:,timePoint2show,0]
-    input_3rdDim=inputTensor[:,timePoint2show,2]
-    input_1stDim=inputTensor[:,timePoint2show,0] 
-    output_2ndDim=outputTensor[:,timePoint2show,1]
+    target_3rdDim=targetTensor[:,timePoint2show,2].numpy()
+    target_1stDim=targetTensor[:,timePoint2show,0].numpy()
+    input_3rdDim=inputTensor[:,timePoint2show,2].numpy()
+    input_1stDim=inputTensor[:,timePoint2show,0].numpy()
+    output_2ndDim=outputTensor[:,timePoint2show,1].numpy()
+
+    # plt.figure()
+    # plt.plot(input_1stDim.numpy(),output_2ndDim.numpy())
+    # plt.savefig(figfilename.replace('.png','line2ndvs1stdiminput.png'))
+
+    # plt.figure()
+    # plt.plot(input_3rdDim.numpy(),output_2ndDim.numpy())
+    # plt.savefig(figfilename.replace('.png','line2ndvs3rddiminput.png'))
 
 
     plt.figure()
-    plt.plot(input_1stDim.numpy(),output_2ndDim.numpy())
+    slope, intercept, r_value, p_value, std_err = stats.linregress(output_2ndDim,input_1stDim)
+    line = slope*output_2ndDim+intercept
+    plt.plot(output_2ndDim,input_1stDim,'o', output_2ndDim, line)
+    plt.scatter(output_2ndDim,input_1stDim)
+    # plt.legend(('data', 'line-regression r^2={}'.format(r_value**2)), 'best')
+    plt.text(0.3, 0.3, 'R-squared = %0.2f' % r_value**2)
     plt.savefig(figfilename.replace('.png','2ndvs1stdiminput.png'))
 
     plt.figure()
-    plt.plot(input_3rdDim.numpy(),output_2ndDim.numpy())
+    slope, intercept, r_value, p_value, std_err = stats.linregress(output_2ndDim,input_3rdDim)
+    line = slope*output_2ndDim+intercept
+    plt.plot(output_2ndDim,input_3rdDim,'o', output_2ndDim, line)
+    plt.scatter(output_2ndDim,input_3rdDim)
+    # plt.legend(('data', 'line-regression r^2={}'.format(r_value**2)), 'best')
+    plt.text(0.3, 0.3 , 'R-squared = %0.2f' % r_value**2)
     plt.savefig(figfilename.replace('.png','2ndvs3rddiminput.png'))
+
+
 
     fig=plt.figure()
     ax = fig.gca(projection='3d')
     ax.set_xlim3d(-1,1)
     ax.set_ylim3d(-1,1)
     ax.set_zlim3d(-1,1)
-    ax.plot_trisurf(output_2ndDim.numpy(),target_1stDim.numpy(),target_3rdDim.numpy())
+    ax.plot_trisurf(output_2ndDim,target_1stDim,target_3rdDim)
     plt.savefig(figfilename.replace('.png','3D2ndvsOutputs.png'))
 
     fig=plt.figure()
@@ -220,7 +244,7 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,figfilenam
     ax.set_xlim3d(-1,1)
     ax.set_ylim3d(-1,1)
     ax.set_zlim3d(-1,1)
-    ax.plot_trisurf(output_2ndDim.numpy(),input_1stDim.numpy(),input_3rdDim.numpy())
+    ax.plot_trisurf(output_2ndDim,input_1stDim,input_3rdDim)
     plt.savefig(figfilename.replace('.png','3D2ndvsInputs.png'))
 
 
@@ -327,7 +351,7 @@ def run_singletrial(config,args,ithrun):
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
         if args.randomDim and args.corrMultiplier: 
-            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,rampPeak)
+            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak)
         else:
             inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
         inputTensor = Variable(inputTensor).to(device)

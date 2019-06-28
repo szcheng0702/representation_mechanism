@@ -15,7 +15,7 @@ class Config(Namespace):
 		# self.timePoints = [100,150,200]
 		self.delayToInput = [30]
 		self.inputOnLength = [80]
-		self.timePoints = [200]
+		self.timePoints = [400]
 		self.rampPeak=[1]
 
 
