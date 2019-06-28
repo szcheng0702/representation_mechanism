@@ -184,7 +184,7 @@ def plot2ndVs1st3rd(targetTensors, outputTensors,figfilename):
 
     plt.savefig(figfilename.replace('.png','2ndvs3rddim.png'))
 
-def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,figfilename):
+def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,figfilename):
     if targetTensor.is_cuda:
         targetTensor=targetTensor.cpu()
 
@@ -196,56 +196,53 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,figfilenam
     numDims=targetTensor.size(2)
 
 
-    target_3rdDim=targetTensor[:,timePoint2show,2].numpy()
-    target_1stDim=targetTensor[:,timePoint2show,0].numpy()
-    input_3rdDim=inputTensor[:,timePoint2show,2].numpy()
-    input_1stDim=inputTensor[:,timePoint2show,0].numpy()
-    output_2ndDim=outputTensor[:,timePoint2show,1].numpy()
+    # target_3rdDim=targetTensor[:,timePoint2show,2].numpy()
+    # target_1stDim=targetTensor[:,timePoint2show,0].numpy()
+    # input_3rdDim=inputTensor[:,timePoint2show,2].numpy()
+    # input_1stDim=inputTensor[:,timePoint2show,0].numpy()
+    # output_2ndDim=outputTensor[:,timePoint2show,1].numpy()
 
-    # plt.figure()
-    # plt.plot(input_1stDim.numpy(),output_2ndDim.numpy())
-    # plt.savefig(figfilename.replace('.png','line2ndvs1stdiminput.png'))
+    target_randomDims=targetTensor[:,timePoint2show,numDims-randomDim:].numpy()
+    target_corrDims=targetTensor[:,timePoint2show,:numDims-randomDim-1].numpy()
+    input_randomDims=inputTensor[:,timePoint2show,numDims-randomDim:].numpy()
+    input_corrDims=inputTensor[:,timePoint2show,:numDims-randomDim-1].numpy()
+    output_queryDim=outputTensor[:,timePoint2show,numDims-randomDim-1].numpy()
 
-    # plt.figure()
-    # plt.plot(input_3rdDim.numpy(),output_2ndDim.numpy())
-    # plt.savefig(figfilename.replace('.png','line2ndvs3rddiminput.png'))
+    for i in range(target_corrDims.shape[2]):
+        plt.figure()
+        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_corrDim[:,:,i])
+        line = slope*output_queryDim+intercept
+        plt.plot(output_queryDim,input_corrDim[:,:,i],'o', output_queryDim, line)
+        plt.scatter(output_queryDim,input_corrDim[:,:,i])
+        plt.text(0.3, 0.3, 'R-squared = %0.2f' % r_value**2)
+        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(i)'diminput.png'))
 
-
-    plt.figure()
-    slope, intercept, r_value, p_value, std_err = stats.linregress(output_2ndDim,input_1stDim)
-    line = slope*output_2ndDim+intercept
-    plt.plot(output_2ndDim,input_1stDim,'o', output_2ndDim, line)
-    plt.scatter(output_2ndDim,input_1stDim)
-    # plt.legend(('data', 'line-regression r^2={}'.format(r_value**2)), 'best')
-    plt.text(0.3, 0.3, 'R-squared = %0.2f' % r_value**2)
-    plt.savefig(figfilename.replace('.png','2ndvs1stdiminput.png'))
-
-    plt.figure()
-    slope, intercept, r_value, p_value, std_err = stats.linregress(output_2ndDim,input_3rdDim)
-    line = slope*output_2ndDim+intercept
-    plt.plot(output_2ndDim,input_3rdDim,'o', output_2ndDim, line)
-    plt.scatter(output_2ndDim,input_3rdDim)
-    # plt.legend(('data', 'line-regression r^2={}'.format(r_value**2)), 'best')
-    plt.text(0.3, 0.3 , 'R-squared = %0.2f' % r_value**2)
-    plt.savefig(figfilename.replace('.png','2ndvs3rddiminput.png'))
+    for j in range(target_randomDims.shape[3]):
+        plt.figure()
+        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_randomDims[:,:,j])
+        line = slope*output_queryDim+intercept
+        plt.plot(output_queryDim,input_randomDims[:,:,j],'o', output_queryDim, line)
+        plt.scatter(output_queryDim,input_randomDims[:,:,j])
+        plt.text(0.3, 0.3 , 'R-squared = %0.2f' % r_value**2)
+        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(j)'diminput.png'))
 
 
 
-    fig=plt.figure()
-    ax = fig.gca(projection='3d')
-    ax.set_xlim3d(-1,1)
-    ax.set_ylim3d(-1,1)
-    ax.set_zlim3d(-1,1)
-    ax.plot_trisurf(output_2ndDim,target_1stDim,target_3rdDim)
-    plt.savefig(figfilename.replace('.png','3D2ndvsOutputs.png'))
+    # fig=plt.figure()
+    # ax = fig.gca(projection='3d')
+    # ax.set_xlim3d(-1,1)
+    # ax.set_ylim3d(-1,1)
+    # ax.set_zlim3d(-1,1)
+    # ax.plot_trisurf(output_2ndDim,target_1stDim,target_3rdDim)
+    # plt.savefig(figfilename.replace('.png','3D2ndvsOutputs.png'))
 
-    fig=plt.figure()
-    ax = fig.gca(projection='3d')
-    ax.set_xlim3d(-1,1)
-    ax.set_ylim3d(-1,1)
-    ax.set_zlim3d(-1,1)
-    ax.plot_trisurf(output_2ndDim,input_1stDim,input_3rdDim)
-    plt.savefig(figfilename.replace('.png','3D2ndvsInputs.png'))
+    # fig=plt.figure()
+    # ax = fig.gca(projection='3d')
+    # ax.set_xlim3d(-1,1)
+    # ax.set_ylim3d(-1,1)
+    # ax.set_zlim3d(-1,1)
+    # ax.plot_trisurf(output_2ndDim,input_1stDim,input_3rdDim)
+    # plt.savefig(figfilename.replace('.png','3D2ndvsInputs.png'))
 
 
 
@@ -519,5 +516,5 @@ if __name__=='__main__':
         network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
         out,inputTensor,target=RunMultiDimTestSet(network,config,args)
         plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
-        plot3dCorr(inputTensor, target, out,100,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
+        plot3dCorr(inputTensor, target, out,100,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
 
