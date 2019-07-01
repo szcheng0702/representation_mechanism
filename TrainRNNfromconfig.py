@@ -215,7 +215,7 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
         plt.plot(output_queryDim,input_corrDim[:,:,i],'o', output_queryDim, line)
         plt.scatter(output_queryDim,input_corrDim[:,:,i])
         plt.text(0.3, 0.3, 'R-squared = %0.2f' % r_value**2)
-        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(i)'diminput.png'))
+        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(i)+'diminput.png'))
 
     for j in range(target_randomDims.shape[3]):
         plt.figure()
@@ -224,7 +224,7 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
         plt.plot(output_queryDim,input_randomDims[:,:,j],'o', output_queryDim, line)
         plt.scatter(output_queryDim,input_randomDims[:,:,j])
         plt.text(0.3, 0.3 , 'R-squared = %0.2f' % r_value**2)
-        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(j)'diminput.png'))
+        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(j)+'diminput.png'))
 
 
 
