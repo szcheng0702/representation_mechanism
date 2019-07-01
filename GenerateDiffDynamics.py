@@ -95,7 +95,7 @@ def get_validSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints):
 
 #optimize later
 def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier,add_noise_mult):
-    numDim=targetSlopeArray.shape[0]
+    corrDim=targetSlopeArray.shape[0]
 
     PeakReachTime=abs((rampPeak/targetSlopeArray*10).astype(int))+delayToInput #+10: loose the bound
 
@@ -106,10 +106,10 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
     for i in range(need2change.shape[0]):
         reachtime=PeakReachTime[:,indx[1][i]]
         while np.count_nonzero(reachtime+10>timePoints)!=0:
-            currArray=GenerateFactorCorrelated(numDim,randomDim,1,correlation_multiplier,add_noise_mult)
-            reachtime=abs(int(rampPeak/currArray*10))+delayToInput
+            currArray=GenerateFactorCorrelated(corrDim+randomDim,randomDim,1,correlation_multiplier,add_noise_mult)
+            reachtime=np.absolute((rampPeak/currArray*10).astype(int))+delayToInput
 
-        targetSlopeArray[:,indx[1][i]]=currArray
+        targetSlopeArray[:,indx[1][i]]=np.reshape(currArray,-1)
 
     return targetSlopeArray
 

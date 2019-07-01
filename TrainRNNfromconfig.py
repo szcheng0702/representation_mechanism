@@ -208,23 +208,25 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
     input_corrDims=inputTensor[:,timePoint2show,:numDims-randomDim-1].numpy()
     output_queryDim=outputTensor[:,timePoint2show,numDims-randomDim-1].numpy()
 
-    for i in range(target_corrDims.shape[2]):
-        plt.figure()
-        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_corrDim[:,:,i])
-        line = slope*output_queryDim+intercept
-        plt.plot(output_queryDim,input_corrDim[:,:,i],'o', output_queryDim, line)
-        plt.scatter(output_queryDim,input_corrDim[:,:,i])
-        plt.text(0.3, 0.3, 'R-squared = %0.2f' % r_value**2)
-        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(i)+'diminput.png'))
 
-    for j in range(target_randomDims.shape[3]):
+    for i in range(target_corrDims.shape[1]):
         plt.figure()
-        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_randomDims[:,:,j])
+        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_corrDims[:,i])
         line = slope*output_queryDim+intercept
-        plt.plot(output_queryDim,input_randomDims[:,:,j],'o', output_queryDim, line)
-        plt.scatter(output_queryDim,input_randomDims[:,:,j])
+        plt.plot(output_queryDim,input_corrDims[:,i],'o', output_queryDim, line)
+        plt.scatter(output_queryDim,input_corrDims[:,i])
+        plt.text(0.3, 0.3, 'R-squared = %0.2f' % r_value**2)
+        plt.savefig(figfilename.replace('.png',str(numDims-randomDim)+'dimvs'+str(i+1)+'diminput.png'))
+
+
+    for j in range(target_randomDims.shape[1]):
+        plt.figure()
+        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_randomDims[:,j])
+        line = slope*output_queryDim+intercept
+        plt.plot(output_queryDim,input_randomDims[:,j],'o', output_queryDim, line)
+        plt.scatter(output_queryDim,input_randomDims[:,j])
         plt.text(0.3, 0.3 , 'R-squared = %0.2f' % r_value**2)
-        plt.savefig(figfilename.replace('.png',str(numDims-randomDim-1)+'dimvs'+str(j)+'diminput.png'))
+        plt.savefig(figfilename.replace('.png',str(numDims-randomDim)+'dimvs'+str(numDims-randomDim+j+1)+'diminput.png'))
 
 
 

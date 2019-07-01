@@ -19,5 +19,5 @@ elif [ "$1" = "test_local" ]; then
     python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4corrramp.ini --time 2 --epochNum 200 --baseDirectory ./testing/ramp/dim/hidden300dim4_corr_noise/ --baseSaveFileName fixedHiddenTrainingResults
 elif [ "$1" = "test" ]; then
 	python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4corrstep.ini --baseDirectory ./results/step/dim/hidden300dim4_corr_noise/ --baseSaveFileName fixedHiddenTrainingResults
-    python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4corrramp.ini --baseDirectory ./results/ramp/dim/hidden300dim4_corr_noise/ --baseSaveFileName fixedHiddenTrainingResults
+    # python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4corrramp.ini --baseDirectory ./results/ramp/dim/hidden300dim4_corr_noise/ --baseSaveFileName fixedHiddenTrainingResults
 fi

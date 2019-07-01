@@ -12,12 +12,12 @@ if [ "$1" = "train" ]; then
 elif [ "$1" = "train_local" ]; then
     mkdir -p testing/step/dim/hidden300dim4
     mkdir -p testing/ramp/dim/hidden300dim4
-    python3 TrainRNNfromconfig.py --config_file ./dim4step.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
+    # python3 TrainRNNfromconfig.py --config_file ./dim4step.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
     python3 TrainRNNfromconfig.py --config_file ./dim4ramp.ini --time 2 --epochNum 200  --baseDirectory ./testing/ramp/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
 elif [ "$1" = "test_local" ]; then
 	python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4step.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
     python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4ramp.ini --time 2 --epochNum 200 --baseDirectory ./testing/ramp/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
 elif [ "$1" = "test" ]; then
 	python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4step.ini --baseDirectory ./results/step/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
-    python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4ramp.ini --baseDirectory ./results/ramp/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
+    # python3 TrainRNNfromconfig.py --mode 'test' --config_file ./dim4ramp.ini --baseDirectory ./results/ramp/dim/hidden300dim4/ --baseSaveFileName fixedHiddenTrainingResults
 fi

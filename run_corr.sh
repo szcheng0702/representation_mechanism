@@ -12,7 +12,7 @@ if [ "$1" = "train" ]; then
 elif [ "$1" = "train_local" ]; then
     mkdir -p testing/step/dim/hidden300_corr_0.05noise
     mkdir -p testing/ramp/dim/hidden300_corr_0.05noise
-    python3 TrainRNNfromconfig.py --config_file ./corrstep.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
+    # python3 TrainRNNfromconfig.py --config_file ./corrstep.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
     python3 TrainRNNfromconfig.py --config_file ./corrramp.ini --time 2 --epochNum 200  --baseDirectory ./testing/ramp/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
 elif [ "$1" = "test_local" ]; then
 	python3 TrainRNNfromconfig.py --mode 'test' --config_file ./corrstep.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
