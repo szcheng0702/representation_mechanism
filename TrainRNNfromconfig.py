@@ -318,7 +318,7 @@ def run_singletrial(config,args,ithrun):
     if args.scheduler:
         if args.resume:
             scheduler.load_state_dict(checkpoint['scheduler'])
-        scheduler=optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, verbose=True, threshold=0.0001, min_lr=1e-6, eps=1e-08)
+        scheduler=optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, verbose=True, threshold=1e-5, min_lr=1e-9, eps=1e-9)
 
 
     save_loss_every = 10
