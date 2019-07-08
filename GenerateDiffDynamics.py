@@ -87,6 +87,20 @@ def GenerateFactorCorrelated(numDim,randomDim,batchSize,correlation_multiplier,a
 
     return np.concatenate(final_array_lsts,axis=0)
 
+def Dim4BiasedFactorCorrelated(batchSize,biased_correlation_multiplier,add_noise=0):
+    firstdim=np.random.uniform(-1,1,(1, batchSize))
+    seconddim=np.random.uniform(-1,1,(1, batchSize))
+
+    final_array_lsts=[firstdim,seconddim]
+    nextdim=firstdim*(biased_correlation_multiplier)+seconddim*(1-biased_correlation_multiplier)
+    if add_noise:
+        nextdim+=add_noise*np.random.uniform(-1,1,(1, batchSize))
+    final_array_lsts.append(nextdim)
+
+
+    return np.concatenate(final_array_lsts,axis=0)
+
+
 def get_validSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints):
 
     PeakReachTime=abs((rampPeak/targetSlopeArray*10).astype(int))+delayToInput #+10: loose the bound
@@ -108,7 +122,7 @@ def get_validSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints):
     return targetSlopeArray
 
 #optimize later
-def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier,add_noise_mult):
+def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier,add_noise_mult,biased=False):
     corrDim=targetSlopeArray.shape[0]
 
     PeakReachTime=abs((rampPeak/targetSlopeArray*10).astype(int))+delayToInput #+10: loose the bound
@@ -120,7 +134,10 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
     for i in range(need2change.shape[0]):
         reachtime=PeakReachTime[:,indx[1][i]]
         while np.count_nonzero(reachtime+10>timePoints)!=0:
-            currArray=GenerateFactorCorrelated(corrDim+randomDim,randomDim,1,correlation_multiplier,add_noise_mult)
+            if biased:
+                currArray=Dim4BiasedFactorCorrelated(1,correlation_multiplier,add_noise_mult)
+            else:
+                currArray=GenerateFactorCorrelated(corrDim+randomDim,randomDim,1,correlation_multiplier,add_noise_mult)
             reachtime=np.absolute((rampPeak/currArray*10).astype(int))+delayToInput
 
         targetSlopeArray[:,indx[1][i]]=np.reshape(currArray,-1)
@@ -151,19 +168,24 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
 
 
 
-def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,add_noise_mult,rampPeak=None):
+def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,add_noise_mult,rampPeak=None,biasedCorrMult=None):
     
     PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
 
     random_useValArray = np.random.uniform(-1,1,(randomDim, batchSize))
     #correlated_ValArray
-    correlated_ValArray=GenerateFactorCorrelated(numDim,randomDim,batchSize,correlation_multiplier,add_noise_mult)
-
+    if numDim==4 and biasedCorrMult:
+        correlated_ValArray=Dim4BiasedFactorCorrelated(batchSize,biasedCorrMult,add_noise_mult)
+    else:
+        correlated_ValArray=GenerateFactorCorrelated(numDim,randomDim,batchSize,correlation_multiplier,add_noise_mult)
 
 
     if outputType=='ramp':
         random_useValArray=get_validSlopeArray(random_useValArray,rampPeak,delayToInput,timePoints)
-        correlated_ValArray=get_validCorrelatedSlopeArray(correlated_ValArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier,add_noise_mult)
+        if numDim==4 and biasedCorrMult:
+            correlated_ValArray=get_validCorrelatedSlopeArray(correlated_ValArray,rampPeak,delayToInput,timePoints,randomDim,biasedCorrMult,add_noise_mult,biased=True)
+        else:
+            correlated_ValArray=get_validCorrelatedSlopeArray(correlated_ValArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier,add_noise_mult)
 
     useValArray=np.concatenate((correlated_ValArray,random_useValArray),axis=0)
     PeakReachTimeArray=np.tile(PeakReachTime,(numDim,1))

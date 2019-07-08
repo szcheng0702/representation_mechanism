@@ -51,6 +51,8 @@ parser.add('--randomDim', type=int, default=None, metavar='N',
                     help='number of dimensions which has no correalation. It is always smaller than args.inputSize')
 parser.add('--corrMultiplier', type=float, default=None, metavar='N',
                     help='correalation multiplier. Used in correlation case only')
+parser.add('--biasedCorrMultiplier', type=float, default=None, metavar='N',
+                    help='Biased correalation multiplier. Current only valid for dimNum=4. Used in correlation case only')
 parser.add('--corrNoise', type=float, default=0, metavar='N',
                     help='noise multiplier added when generating correlated dimension, so that the correlation dimension becauses\
                     corrMultiplier*prevDim+corrNoise*U(-1,1). Default:0.1')
@@ -349,8 +351,8 @@ def run_singletrial(config,args,ithrun):
 
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
-        if args.randomDim and args.corrMultiplier: 
-            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak)
+        if args.randomDim: 
+            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
         else:
             inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
         inputTensor = Variable(inputTensor).to(device)
