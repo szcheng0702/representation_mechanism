@@ -14,37 +14,51 @@ def DefineOutputRampTarget(targetSlope,targetPeak,delayToInput,timePoints,dt):
     PeakReachTime=int(rampend/targetSlope)+delayToInput
     # if PeakReachTime<timePoints: We have make sure before call this function that this is satisfied
     targetSig[(delayToInput+1):PeakReachTime+1]=np.expand_dims(np.linspace(targetSlope+targetSig[delayToInput][0],rampend,num=int(rampend/targetSlope)),axis=-1)
-
     targetSig[(PeakReachTime+1):timePoints] = rampend
-    # else:
-    #     pdb.set_trace()
-    #     targetSig[(delayToInput+1):]=np.expand_dims(np.linspace(targetSlope+targetSig[delayToInput][0],rampend,num=int(rampend/targetSlope)),axis=-1)[:timePoints-delayToInput]
+
   
     targetTensor[:,:,0] = torch.from_numpy(targetSig)
     return targetSig, targetTensor
 
 
-def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
+def DefineOutputRampTarget_PeakRandom(PeakReachTime,targetPeak,delayToInput,timePoints,dt):
+    targetSig = np.zeros((timePoints,1))
+    targetTensor = torch.zeros(timePoints, 1, 1)
+    targetSig[:delayToInput+1]=ComputeDecay(targetPeak,dt,delayToInput)
+
+    targetSlope=targetPeak/(PeakReachTime-delayToInput)
+
+
+    targetSig[(delayToInput+1):PeakReachTime+1]=np.expand_dims(np.linspace(targetSlope+targetSig[delayToInput][0],targetPeak,num=PeakReachTime-delayToInput),axis=-1)
+    targetSig[(PeakReachTime+1):timePoints] = targetPeak
+
+  
+    targetTensor[:,:,0] = torch.from_numpy(targetSig)
+    return targetSig, targetTensor
+
+
+def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None,PeakReachTime=None):
     inputSig, inputTensor = DefineInputSignals(useVal, delayToInput, inputOnLength,timePoints)
 
     if outputType=='step':
         targetSig, targetTensor = DefineOutputTarget(useVal, delayToInput,timePoints,dt)
     elif outputType=='ramp':
         targetSig, targetTensor = DefineOutputRampTarget(useVal/10, rampPeak, delayToInput, timePoints,dt)
+    elif outputType=='newramp':
+        targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
 
     return inputSig, targetSig, inputTensor, targetTensor
 
-def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
+def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None,PeakReachTime=None):
     numDim = len(useValVec)
     inputTensorList = []
     targetTensorList = []
 
     for ii in range(numDim):
         inputSigCurrent, targetSigCurrent, inputTensorCurrent, targetTensorCurrent = \
-            GenerateOneDimensionalTarget(useValVec[ii],delayToInput, inputOnLength,timePoints,dt,outputType,rampPeak)
+            GenerateOneDimensionalTarget(useValVec[ii],delayToInput, inputOnLength,timePoints,dt,outputType,rampPeak,PeakReachTime[ii])
         inputTensorList.append(inputTensorCurrent)
         targetTensorList.append(targetTensorCurrent)
-
     #Create multidimensional input, hidden, and target Tensors using cat
     inputTensor = inputTensorList[0]
     targetTensor = targetTensorList[0]
@@ -116,18 +130,20 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
 
 
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
+    PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
     useValArray = np.random.uniform(-1,1,(numDim, batchSize))
+
 
     if outputType=='ramp':
         useValArray=get_validSlopeArray(useValArray,rampPeak,delayToInput,timePoints)
 
     # Start first element 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTime[:,0])
     # Continue:
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
@@ -137,29 +153,35 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
 
 def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,add_noise_mult,rampPeak=None):
     
-    random_useValArray = np.random.uniform(-1,1,(randomDim, batchSize))
+    PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
 
+    random_useValArray = np.random.uniform(-1,1,(randomDim, batchSize))
     #correlated_ValArray
     correlated_ValArray=GenerateFactorCorrelated(numDim,randomDim,batchSize,correlation_multiplier,add_noise_mult)
 
-        
+
+
     if outputType=='ramp':
         random_useValArray=get_validSlopeArray(random_useValArray,rampPeak,delayToInput,timePoints)
         correlated_ValArray=get_validCorrelatedSlopeArray(correlated_ValArray,rampPeak,delayToInput,timePoints,randomDim,correlation_multiplier,add_noise_mult)
 
     useValArray=np.concatenate((correlated_ValArray,random_useValArray),axis=0)
+    PeakReachTimeArray=np.tile(PeakReachTime,(numDim,1))
+
 
     # Start first element 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
     # Continue:
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
     return  inputTensor, targetTensor
+
+
 
 def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
     useValVec = np.linspace(-1,1, testSetSize)
@@ -168,13 +190,18 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
     testSetSize = useValVec.shape[0] ** dimNum
     useValArray = np.reshape(useValArray,(dimNum, testSetSize))
 
+    PeakReachTime=np.linspace(delayToInput+10,timePoints-10,testSetSize).astype(int)
+    multiValReachArray = np.tile(PeakReachTime,(dimNum,1))
+    PeakReachTimeArray = np.asarray(np.meshgrid(*multiValReachArray))
+    PeakReachTimeArray = np.reshape(PeakReachTimeArray,(dimNum, testSetSize))
+
 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
 
     for ii in range(1, testSetSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak)
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 

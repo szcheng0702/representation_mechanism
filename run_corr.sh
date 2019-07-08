@@ -15,8 +15,8 @@ elif [ "$1" = "train_local" ]; then
     # python3 TrainRNNfromconfig.py --config_file ./corrstep.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
     python3 TrainRNNfromconfig.py --config_file ./corrramp.ini --time 2 --epochNum 200  --baseDirectory ./testing/ramp/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
 elif [ "$1" = "test_local" ]; then
-	python3 TrainRNNfromconfig.py --mode 'test' --config_file ./corrstep.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
-    python3 TrainRNNfromconfig.py --mode 'test' --config_file ./corrramp.ini --time 2 --epochNum 200 --baseDirectory ./testing/ramp/dim/hidden300_corr_0.0d5noise/ --baseSaveFileName fixedHiddenTrainingResults
+	# python3 TrainRNNfromconfig.py --mode 'test' --config_file ./corrstep.ini --time 2 --epochNum 200 --baseDirectory ./testing/step/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
+    python3 TrainRNNfromconfig.py --mode 'test' --config_file ./corrramp.ini --time 2 --epochNum 200 --baseDirectory ./testing/ramp/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
 elif [ "$1" = "test" ]; then
 	python3 TrainRNNfromconfig.py --mode 'test' --config_file ./corrstep.ini --baseDirectory ./results/step/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults
     python3 TrainRNNfromconfig.py --mode 'test' --config_file ./corrramp.ini --baseDirectory ./results/ramp/dim/hidden300_corr_0.05noise/ --baseSaveFileName fixedHiddenTrainingResults

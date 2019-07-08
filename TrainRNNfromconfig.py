@@ -81,7 +81,7 @@ parser.add('--save_every', type=int, default=1000, metavar='N',
 parser.add('--noise_std', type=float, default=0, metavar='N',
                     help='set noise value')
 parser.add('--dynamics',type=str,default='step',metavar='D',
-                    help='output dynamics type, choose from [step,ramp,sinusoidal]')
+                    help='output dynamics type, choose from [step,ramp,newramp,sinusoidal]')
 parser.add('--mode',type=str,default='train',metavar='D',
                     help='task mode, choose from [train,test]')
 
