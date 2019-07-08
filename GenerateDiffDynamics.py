@@ -147,8 +147,10 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
 
 
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
-    # PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
     PeakReachTime=np.full((numDim,batchSize),delayToInput+200)
+
+    if outputType=='ramp_PRRandom':
+        PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
     useValArray = np.random.uniform(-1,1,(numDim, batchSize))
 
 
@@ -171,8 +173,10 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
 
 def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,add_noise_mult,rampPeak=None,biasedCorrMult=None):
     
-    PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
     PeakReachTime=np.full((randomDim,batchSize),delayToInput+200)
+
+    if outputType=='ramp_PRRandom':
+        PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
 
     random_useValArray = np.random.uniform(-1,1,(randomDim, batchSize))
     #correlated_ValArray
@@ -214,11 +218,13 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
     testSetSize = useValVec.shape[0] ** dimNum
     useValArray = np.reshape(useValArray,(dimNum, testSetSize))
 
-    # PeakReachTime=np.linspace(delayToInput+10,timePoints-10,testSetSize).astype(int)
-    # multiValReachArray = np.tile(PeakReachTime,(dimNum,1))
-    # PeakReachTimeArray = np.asarray(np.meshgrid(*multiValReachArray))
-    # PeakReachTimeArray = np.reshape(PeakReachTimeArray,(dimNum, testSetSize))
     PeakReachTimeArray=np.full((dimNum,testSetSize),delayToInput+200)
+
+    if outputType=='ramp_PRRandom':
+        PeakReachTime=np.linspace(delayToInput+10,timePoints-10,testSetSize).astype(int)
+        multiValReachArray = np.tile(PeakReachTime,(dimNum,1))
+        PeakReachTimeArray = np.asarray(np.meshgrid(*multiValReachArray))
+        PeakReachTimeArray = np.reshape(PeakReachTimeArray,(dimNum, testSetSize))
 
 
     inputTensor, targetTensor = \
