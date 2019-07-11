@@ -373,7 +373,7 @@ def run_singletrial(config,args,ithrun):
             current_loss = 0
 
             if iter % (5 * save_loss_every)==0:
-                print('Iteration %d Time (%s) Average loss: %.4f ' % (iter, timeSince(start), current_avg_loss))
+                print('Iteration %d Time (%s) Average loss: %.6f ' % (iter, timeSince(start), current_avg_loss))
 
             # with open(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv', 'w') as lossFile:
             #     wr = csv.writer(lossFile, delimiter='\t')
@@ -381,7 +381,7 @@ def run_singletrial(config,args,ithrun):
 
         # Edit this to match
         if iter % args.save_every == 0:
-            print('===> Storing results at epoch: %d Latest average loss: %.4f' % (iter, current_avg_loss))
+            print('===> Storing results at epoch: %d Latest average loss: %.6f' % (iter, current_avg_loss))
             state = {
                 'inputSize': args.inputSize,
                 'outputSize': args.outputSize,
