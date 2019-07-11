@@ -165,7 +165,6 @@ def plot2ndVs1st3rd(targetTensors, outputTensors,figfilename):
 
     colorList = ['b', 'g', 'r', 'k', 'c', 'm']
 
-
     target_3rdDim=[targetTensor[:,:,2] for targetTensor in targetTensors]
     target_1stDim=[targetTensor[:,:,0] for targetTensor in targetTensors]
     output_2ndDim=[outputTensor[:,:,1] for outputTensor in outputTensors]
@@ -197,12 +196,6 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
     batch_size = targetTensor.size(0)
     numDims=targetTensor.size(2)
 
-
-    # target_3rdDim=targetTensor[:,timePoint2show,2].numpy()
-    # target_1stDim=targetTensor[:,timePoint2show,0].numpy()
-    # input_3rdDim=inputTensor[:,timePoint2show,2].numpy()
-    # input_1stDim=inputTensor[:,timePoint2show,0].numpy()
-    # output_2ndDim=outputTensor[:,timePoint2show,1].numpy()
 
     target_randomDims=targetTensor[:,timePoint2show,numDims-randomDim:].numpy()
     target_corrDims=targetTensor[:,timePoint2show,:numDims-randomDim-1].numpy()
@@ -251,7 +244,6 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
 
 
 
-
 def signal_arguments(config):
     delayToInput = random.choice(config.delayToInput)
     inputOnLength = random.choice(config.inputOnLength)
@@ -279,9 +271,7 @@ def run_singletrial(config,args,ithrun):
     if args.resume:
         savedNetworkName = args.baseSaveFileName
         baseSplit = args.baseSaveFileName.split('_')
-        # defaultBaseName = baseSplit[0]+"_"+baseSplit[1]+"_"+baseSplit[2]+"_e"
         defaultBaseName=baseSplit[0]
-        # # lastSavedIter = int(baseSplit[3][1:])
         args.baseSaveFileName = defaultBaseName
 
         checkpoint = torch.load(savedNetworkName, map_location=lambda storage, loc: storage)
@@ -345,10 +335,6 @@ def run_singletrial(config,args,ithrun):
     print('Training network')
     network.train() #add this line to make sure the network is in "training" mode
 
-    #write input information
-    inputarg_name=['delayToInput','inputOnLength','timePoints','rampPeak']
-    inputarg_value=[delayToInput,inputOnLength,timePoints,rampPeak]
-
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
         if args.randomDim: 
@@ -373,9 +359,10 @@ def run_singletrial(config,args,ithrun):
         loss = criterion(oo, targetTensor)
         loss.backward()
         optimizer.step()
-        #print(z.data.numpy())
-        #print(loss.data.numpy())
         current_loss += loss
+
+        if args.scheduler:
+            scheduler.step(loss)
 
         # Print iter number, loss, name and guess
         if iter % save_loss_every == 0:
@@ -418,8 +405,6 @@ def run_singletrial(config,args,ithrun):
 
             save_checkpoint(args,state, iter,ithrun)
 
-        if args.scheduler:
-            scheduler.step(current_avg_loss)
 
     print('Done training network')
     # plotOutput([targetTensor],[oo])
@@ -431,11 +416,10 @@ def run_singletrial(config,args,ithrun):
     df.to_csv(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
 
     print('Average training loss =', np.mean(all_losses))
-    # plotScatter(all_lossesX, all_losses)
 
-    # with open(args.StatsSaveFileName, 'wb') as output:
-    #         pickle.dump(inputs, output, pickle.HIGHEST_PROTOCOL)
-    #         pickle.dump()
+    #write input information
+    inputarg_name=['delayToInput','inputOnLength','timePoints','rampPeak']
+    inputarg_value=[delayToInput,inputOnLength,timePoints,rampPeak]
 
     with open(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
         wr = csv.writer(lossFile, delimiter='\t')
