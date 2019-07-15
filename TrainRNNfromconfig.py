@@ -199,18 +199,18 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
 
     target_randomDims=targetTensor[:,timePoint2show,numDims-randomDim:].numpy()
     target_corrDims=targetTensor[:,timePoint2show,:numDims-randomDim-1].numpy()
-    input_randomDims=inputTensor[:,timePoint2show,numDims-randomDim:].numpy()
-    input_corrDims=inputTensor[:,timePoint2show,:numDims-randomDim-1].numpy()
+    input_randomDims=inputTensor[:,100,numDims-randomDim:].numpy()
+    input_corrDims=inputTensor[:,100,:numDims-randomDim-1].numpy()
     output_queryDim=outputTensor[:,timePoint2show,numDims-randomDim-1].numpy()
 
 
     for i in range(target_corrDims.shape[1]):
         plt.figure()
-        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_corrDims[:,i])
+        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_corrDims[:,i])        
         line = slope*output_queryDim+intercept
         plt.plot(output_queryDim,input_corrDims[:,i],'o', output_queryDim, line)
         plt.scatter(output_queryDim,input_corrDims[:,i])
-        plt.text(0.3, 0.3, 'R-squared = %0.2f' % r_value**2)
+        plt.text(0.1, 0.1, 'R-squared = %0.2f' % r_value**2)
         plt.savefig(figfilename.replace('.png',str(numDims-randomDim)+'dimvs'+str(i+1)+'diminput.png'))
 
 
@@ -220,7 +220,7 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
         line = slope*output_queryDim+intercept
         plt.plot(output_queryDim,input_randomDims[:,j],'o', output_queryDim, line)
         plt.scatter(output_queryDim,input_randomDims[:,j])
-        plt.text(0.3, 0.3 , 'R-squared = %0.2f' % r_value**2)
+        plt.text(0.1, 0.1 , 'R-squared = %0.2f' % r_value**2)
         plt.savefig(figfilename.replace('.png',str(numDims-randomDim)+'dimvs'+str(numDims-randomDim+j+1)+'diminput.png'))
 
 
@@ -310,7 +310,7 @@ def run_singletrial(config,args,ithrun):
     if args.scheduler:
         if args.resume:
             scheduler.load_state_dict(checkpoint['scheduler'])
-        scheduler=optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, verbose=True, threshold=1e-5, min_lr=1e-9, eps=1e-9)
+        scheduler=optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, verbose=True, threshold=5e-6, min_lr=1e-9, eps=1e-9)
 
 
     save_loss_every = 10
@@ -504,5 +504,5 @@ if __name__=='__main__':
         network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
         out,inputTensor,target=RunMultiDimTestSet(network,config,args)
         plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
-        plot3dCorr(inputTensor, target, out,100,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
+        plot3dCorr(inputTensor, target, out,110,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
 

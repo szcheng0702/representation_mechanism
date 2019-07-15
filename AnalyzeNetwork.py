@@ -76,10 +76,13 @@ def RunMultiDimTestSet(network, config,args):
     delayToInput,inputOnLength,timePoints,rP=signal_arguments(config)
 
 
+
+
     # inputTensor, targetTensor = getMultiDimTestSet(perDimTestSetSize, dimNum, delayToInput, inputOnLength, timePoints,args.dt,outputType,rampPeak=None)
     inputTensor, targetTensor=getRandomBatch(testSetSize, dimNum, delayToInput, inputOnLength, timePoints,args.dt,outputType,rampPeak=rP)
 
     inputTensor = Variable(inputTensor).to(device)
+
 
     #targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
 

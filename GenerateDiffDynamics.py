@@ -44,7 +44,7 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
         targetSig, targetTensor = DefineOutputTarget(useVal, delayToInput,timePoints,dt)
     elif outputType=='ramp':
         targetSig, targetTensor = DefineOutputRampTarget(useVal/10, rampPeak, delayToInput, timePoints,dt)
-    elif outputType=='newramp':
+    elif outputType=='newramp' or outputType=='ramp_PRRandom':
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
 
     return inputSig, targetSig, inputTensor, targetTensor
@@ -147,7 +147,7 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
 
 
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
-    PeakReachTime=np.full((numDim,batchSize),delayToInput+200)
+    PeakReachTime=np.full((numDim,batchSize),delayToInput+100)
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
@@ -167,13 +167,15 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
+
+
     return  inputTensor, targetTensor
 
 
 
 def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,add_noise_mult,rampPeak=None,biasedCorrMult=None):
     
-    PeakReachTime=np.full((randomDim,batchSize),delayToInput+200)
+    PeakReachTime=np.full((randomDim,batchSize),delayToInput+100)
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
@@ -218,7 +220,7 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
     testSetSize = useValVec.shape[0] ** dimNum
     useValArray = np.reshape(useValArray,(dimNum, testSetSize))
 
-    PeakReachTimeArray=np.full((dimNum,testSetSize),delayToInput+200)
+    PeakReachTimeArray=np.full((dimNum,testSetSize),delayToInput+100)
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.linspace(delayToInput+10,timePoints-10,testSetSize).astype(int)
