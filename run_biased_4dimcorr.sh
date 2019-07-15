@@ -8,9 +8,9 @@ if [ "$1" = "train" ]; then
     mkdir -p results/step/dim/hidden400epo3000dim4_biasedcorr_0.1noise
     mkdir -p results/newramp/dim/hidden400epo3000dim4_biasedcorr_0.1noise
     cp ./biased_corrstep.ini results/step/dim/hidden400epo3000dim4_biasedcorr_0.1noise
-    cp ./biased_corrnewramp results/newramp/dim/hidden400epo3000dim4_biasedcorr_0.1noise
-    python3 TrainRNNfromconfig.py --config_file ./biased_corrstep.ini --baseDirectory ./results/step/dim/hidden400epo3000dim4_biasedcorr_0.1noise/ --baseSaveFileName fixedHiddenTrainingResults --gpu_idx 4
-    python3 TrainRNNfromconfig.py --config_file ./biased_corrnewramp.ini --baseDirectory ./results/newramp/dim/hidden400epo3000dim4_biasedcorr_0.1noise/ --baseSaveFileName fixedHiddenTrainingResults --gpu_idx 4
+    cp ./biased_corrnewramp.ini results/newramp/dim/hidden400epo3000dim4_biasedcorr_0.1noise
+    python3 TrainRNNfromconfig.py --config_file ./biased_corrstep.ini --baseDirectory ./results/step/dim/hidden400epo3000dim4_biasedcorr_0.1noise/ --baseSaveFileName fixedHiddenTrainingResults --gpu_idx 0
+    python3 TrainRNNfromconfig.py --config_file ./biased_corrnewramp.ini --baseDirectory ./results/newramp/dim/hidden400epo3000dim4_biasedcorr_0.1noise/ --baseSaveFileName fixedHiddenTrainingResults --gpu_idx 0
 elif [ "$1" = "train_local" ]; then
     # mkdir -p testing/step/dim/hidden400epo3000dim4_biasedcorr_0.1noise
     mkdir -p testing/newramp/dim/hidden400epo3000dim4_biasedcorr_0.1noise
