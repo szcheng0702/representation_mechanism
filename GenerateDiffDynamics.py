@@ -148,14 +148,20 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
 
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
     PeakReachTime=np.full((numDim,batchSize),delayToInput+100)
+    useValArray = np.random.uniform(-1,1,(numDim, batchSize))
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
-    useValArray = np.random.uniform(-1,1,(numDim, batchSize))
+
 
 
     if outputType=='ramp':
         useValArray=get_validSlopeArray(useValArray,rampPeak,delayToInput,timePoints)
+
+    if outputType=='20uniform':
+        PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
+        useValArray=np.linspace(-1,1,num=21)
+        pdb.set_trace()
 
     # Start first element 
     inputTensor, targetTensor = \
@@ -166,7 +172,6 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
             TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
-
 
 
     return  inputTensor, targetTensor
