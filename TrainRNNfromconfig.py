@@ -501,7 +501,9 @@ if __name__=='__main__':
     if args.mode=='train':
         run_multipletrials_samesetting(config,args,'')
     if args.mode=='test':
+        # print(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
         network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
+        # network=LoadModel(networkname)
         out,inputTensor,target=RunMultiDimTestSet(network,config,args)
         plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
         plot3dCorr(inputTensor, target, out,110,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
