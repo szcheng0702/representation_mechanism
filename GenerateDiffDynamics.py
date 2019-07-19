@@ -44,7 +44,7 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
         targetSig, targetTensor = DefineOutputTarget(useVal, delayToInput,timePoints,dt)
     elif outputType=='ramp':
         targetSig, targetTensor = DefineOutputRampTarget(useVal/10, rampPeak, delayToInput, timePoints,dt)
-    elif outputType=='newramp' or outputType=='ramp_PRRandom':
+    elif outputType=='newramp' or outputType=='ramp_PRRandom' or outputType=='20uniform':
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
 
     return inputSig, targetSig, inputTensor, targetTensor
@@ -153,15 +153,13 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
 
-
-
     if outputType=='ramp':
         useValArray=get_validSlopeArray(useValArray,rampPeak,delayToInput,timePoints)
 
     if outputType=='20uniform':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
-        useValArray=np.linspace(-1,1,num=21)
-        pdb.set_trace()
+        useValArray=np.tile(np.linspace(-1,1,num=21),(numDim,1))
+
 
     # Start first element 
     inputTensor, targetTensor = \
