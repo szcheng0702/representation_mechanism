@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 import pdb
@@ -18,7 +19,8 @@ class RateUnitNetwork(nn.Module):
         self.noise = noise
 
     def forward(self, input, hidden):
-        recurrentInput = self.h2h(self.tanh(hidden))
+        # recurrentInput = self.h2h(self.tanh(hidden))
+        recurrentInput=self.h2h(F.relu(hidden))
 
         if self.noise==0:
             hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput))
