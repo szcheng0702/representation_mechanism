@@ -335,21 +335,21 @@ def run_singletrial(config,args,ithrun):
     print('Training network')
     network.train() #add this line to make sure the network is in "training" mode
 
-    # if args.randomDim: 
-    #     inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
-    # else:
-    #     inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
-    # inputTensor = Variable(inputTensor).to(device)
-    # targetTensor=targetTensor.to(device)
+    if args.randomDim: 
+        inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
+    else:
+        inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
+    inputTensor = Variable(inputTensor).to(device)
+    targetTensor=targetTensor.to(device)
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
 
-        if args.randomDim: 
-            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
-        else:
-            inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
-        inputTensor = Variable(inputTensor).to(device)
-        targetTensor=targetTensor.to(device)
+        # if args.randomDim: 
+        #     inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
+        # else:
+        #     inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
+        # inputTensor = Variable(inputTensor).to(device)
+        # targetTensor=targetTensor.to(device)
 
         # targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
 
