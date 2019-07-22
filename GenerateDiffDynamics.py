@@ -58,7 +58,7 @@ def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,o
 
     for ii in range(numDim):
         inputSigCurrent, targetSigCurrent, inputTensorCurrent, targetTensorCurrent = \
-            GenerateOneDimensionalTarget(useValVec[ii],delayToInput, inputOnLength,timePoints,dt,outputType,rampPeak,PeakReachTime[ii])
+            GenerateOneDimensionalTarget(useValVec[ii],delayToInput, inputOnLength[ii],timePoints,dt,outputType,rampPeak,PeakReachTime[ii])
         inputTensorList.append(inputTensorCurrent)
         targetTensorList.append(targetTensorCurrent)
 
@@ -149,7 +149,7 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
     return targetSlopeArray
 
 def PRTime2inputOnLength(oldLength,timePoints,PeakReachTime):
-    inputOnLength=oldLength+(timePoints/2-PeakReachTime)//2
+    inputOnLength=(oldLength+(timePoints/2-PeakReachTime)//2).astype(int)
 
     return inputOnLength
 
@@ -170,14 +170,13 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
         useValArray=np.tile(np.linspace(-1,1,num=21),(numDim,1))
         inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)
 
-
     # Start first element 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength[0], timePoints,dt,outputType,rampPeak,PeakReachTime[:,0])
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLengthArr[:,0], timePoints,dt,outputType,rampPeak,PeakReachTime[:,0])
     # Continue:
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength[ii], timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii])
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLengthArr[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
