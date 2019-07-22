@@ -47,6 +47,7 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
     elif outputType=='newramp' or outputType=='ramp_PRRandom' or outputType=='20uniform':
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
 
+
     return inputSig, targetSig, inputTensor, targetTensor
 
 def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None,PeakReachTime=None):
@@ -54,11 +55,13 @@ def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,o
     inputTensorList = []
     targetTensorList = []
 
+
     for ii in range(numDim):
         inputSigCurrent, targetSigCurrent, inputTensorCurrent, targetTensorCurrent = \
             GenerateOneDimensionalTarget(useValVec[ii],delayToInput, inputOnLength,timePoints,dt,outputType,rampPeak,PeakReachTime[ii])
         inputTensorList.append(inputTensorCurrent)
         targetTensorList.append(targetTensorCurrent)
+
     #Create multidimensional input, hidden, and target Tensors using cat
     inputTensor = inputTensorList[0]
     targetTensor = targetTensorList[0]
@@ -66,6 +69,7 @@ def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,o
     for currentDim in range(1, numDim):
         inputTensor = torch.cat((inputTensor, inputTensorList[currentDim]), 2)
         targetTensor = torch.cat((targetTensor, targetTensorList[currentDim]), 2)
+
     inputTensor = torch.transpose(inputTensor, 0, 1)
     targetTensor = torch.transpose(targetTensor,0, 1)
 
@@ -144,14 +148,19 @@ def get_validCorrelatedSlopeArray(targetSlopeArray,rampPeak,delayToInput,timePoi
 
     return targetSlopeArray
 
+def PRTime2inputOnLength(oldLength,timePoints,PeakReachTime):
+    inputOnLength=oldLength+(timePoints/2-PeakReachTime)//2
 
+    return inputOnLength
 
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
     PeakReachTime=np.full((numDim,batchSize),delayToInput+100)
     useValArray = np.random.uniform(-1,1,(numDim, batchSize))
 
+    inputOnLengthArr=np.full(batchSize,inputOnLength)
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
+        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)
 
     if outputType=='ramp':
         useValArray=get_validSlopeArray(useValArray,rampPeak,delayToInput,timePoints)
@@ -159,15 +168,16 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
     if outputType=='20uniform':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
         useValArray=np.tile(np.linspace(-1,1,num=21),(numDim,1))
+        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)
 
 
     # Start first element 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTime[:,0])
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength[0], timePoints,dt,outputType,rampPeak,PeakReachTime[:,0])
     # Continue:
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii])
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength[ii], timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 

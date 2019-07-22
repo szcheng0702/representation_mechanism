@@ -78,6 +78,13 @@ def DefineInputSignals(inputVal, delayToInput, inputOnLength, timePoints):
     inputTensor[delayToInput:(delayToInput+inputOnLength),0,0] = inputVal
     return inputSig, inputTensor
 
+# def DefineInputSignals_inputLengthVaries(inputVal, delayToInput, inputOnLength, timePoints):
+#     inputSig = np.zeros(timePoints)
+#     inputTensor = torch.zeros(timePoints, 1, 1)
+#     inputSig[delayToInput:(delayToInput+inputOnLength)] = inputVal
+#     inputTensor[delayToInput:(delayToInput+inputOnLength),0,0] = inputVal
+#     return inputSig, inputTensor
+
 def ComputeDecay(targetVal,dt,delayToInput):
     delayTensor=np.zeros((delayToInput+1,1))
     delayTensor[0]=targetVal
