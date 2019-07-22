@@ -191,6 +191,7 @@ def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLeng
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
+        
 
     random_useValArray = np.random.uniform(-1,1,(randomDim, batchSize))
     #correlated_ValArray
@@ -210,16 +211,22 @@ def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLeng
     useValArray=np.concatenate((correlated_ValArray,random_useValArray),axis=0)
     PeakReachTimeArray=np.tile(PeakReachTime,(numDim,1))
 
+    inputOnLengthArr=np.full(batchSize,inputOnLength)
+    if outputType=='ramp_PRRandom':
+        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTimeArray)
+
 
     # Start first element 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLengthArr[:,0], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
     # Continue:
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLengthArr[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
+
+
 
     return  inputTensor, targetTensor
 
@@ -233,20 +240,21 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
     useValArray = np.reshape(useValArray,(dimNum, testSetSize))
 
     PeakReachTimeArray=np.full((dimNum,testSetSize),delayToInput+100)
+    inputOnLengthArr=np.full(testSetSize,inputOnLength)
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.linspace(delayToInput+10,timePoints-10,testSetSize).astype(int)
         multiValReachArray = np.tile(PeakReachTime,(dimNum,1))
         PeakReachTimeArray = np.asarray(np.meshgrid(*multiValReachArray))
         PeakReachTimeArray = np.reshape(PeakReachTimeArray,(dimNum, testSetSize))
-
+        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTimeArray)
 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength[:,0], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
 
     for ii in range(1, testSetSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
