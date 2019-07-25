@@ -83,12 +83,12 @@ parser.add('--save_every', type=int, default=1000, metavar='N',
 parser.add('--noise_std', type=float, default=0, metavar='N',
                     help='set noise value')
 parser.add('--dynamics',type=str,default='step',metavar='D',
-                    help='output dynamics type, choose from [step,ramp,newramp,ramp_PRRandom]')
+                    help='output dynamics type, choose from [step,ramp,newramp,ramp_PRRandom,ramp_2Dinput,sine]')
 parser.add('--mode',type=str,default='train',metavar='D',
                     help='task mode, choose from [train,test]')
 
 def save_checkpoint(args,state, currentIter,ithrun):
-    file_name = args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(currentIter)+'_'+str(ithrun)
+    file_name = args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(currentIter)+'_'+str(ithrun)
     torch.save(state, file_name)
 
 def timeSince(since):
@@ -326,7 +326,7 @@ def run_singletrial(config,args,ithrun):
 
     start = time.time()
     filename = args.baseSaveFileName
-    numDim = args.inputSize
+    numDim = args.outputSize
     lowestLoss = 1e6
     current_avg_loss = lowestLoss
 
@@ -335,23 +335,21 @@ def run_singletrial(config,args,ithrun):
     print('Training network')
     network.train() #add this line to make sure the network is in "training" mode
 
-    if args.randomDim: 
-        inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
-    else:
-        inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
-    inputTensor = Variable(inputTensor).to(device)
-    targetTensor=targetTensor.to(device)
+    # if args.randomDim: 
+    #     inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
+    # else:
+    #     inputTensor, targetTensor = (args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
+    # inputTensor = Variable(inputTensor).to(device)
+    # targetTensor=targetTensor.to(device)
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
 
-        # if args.randomDim: 
-        #     inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
-        # else:
-        #     inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
-        # inputTensor = Variable(inputTensor).to(device)
-        # targetTensor=targetTensor.to(device)
-
-        # targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
+        if args.randomDim: 
+            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
+        else:
+            inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
+        inputTensor = Variable(inputTensor).to(device)
+        targetTensor=targetTensor.to(device)
 
         
         optimizer.zero_grad()
@@ -422,7 +420,7 @@ def run_singletrial(config,args,ithrun):
     list_of_tuples=list(zip(all_lossesX, all_losses))
 
     df = pd.DataFrame(list_of_tuples, columns = ['Iteration', 'MSELoss']) 
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
 
     print('Average training loss =', np.mean(all_losses))
 
@@ -430,7 +428,7 @@ def run_singletrial(config,args,ithrun):
     inputarg_name=['delayToInput','inputOnLength','timePoints','rampPeak']
     inputarg_value=[delayToInput,inputOnLength,timePoints,rampPeak]
 
-    with open(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
+    with open(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_inputarg.csv', 'w') as lossFile:
         wr = csv.writer(lossFile, delimiter='\t')
         wr.writerows(zip(inputarg_name, inputarg_value))
 
@@ -439,7 +437,7 @@ def run_singletrial(config,args,ithrun):
         oo=oo.cpu()
         inputTensor=inputTensor.cpu()
         
-    np.savez(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_arrays.npz',input=inputTensor.numpy(),target=targetTensor.numpy(),out=oo.detach().numpy())
+    np.savez(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_arrays.npz',input=inputTensor.numpy(),target=targetTensor.numpy(),out=oo.detach().numpy())
 
     return targetTensor,oo,all_losses[-1]
 
@@ -451,9 +449,9 @@ def run_multipletrials_samesetting(config,args,option):
     if option=='hidden':
         opt_str='_hidden'+str(args.hiddenUnitNum)
     elif option=='dim':
-        opt_str='_numdim'+str(args.inputSize)
+        opt_str='_numdim'+str(args.outputSize)
     else:
-        opt_str='_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)
+        opt_str='_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)
  
 
     for i in range(args.time):
@@ -489,9 +487,9 @@ def run_multiple_diffhiddenUnit(hiddenUnitLst,config,args):
 def run_multiple_diffdim(dimLst,config,args):
     df_lst=[]
     for i in range(len(dimLst)):
-        args.inputSize=dimLst[i]
         args.outputSize=dimLst[i]
-        print('num of Dim: {}'.format(args.inputSize))
+        args.outputSize=dimLst[i]
+        print('num of Dim: {}'.format(args.outputSize))
         df_current=run_multipletrials_samesetting(config,args,'dim')
         df_lst.append(df_current)
 
@@ -510,8 +508,8 @@ if __name__=='__main__':
     if args.mode=='train':
         run_multipletrials_samesetting(config,args,'')
     if args.mode=='test':
-        # print(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
-        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.inputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
+        print(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
+        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
         # network=LoadModel(networkname)
         out,inputTensor,target=RunMultiDimTestSet(network,config,args)
         plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')

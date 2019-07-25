@@ -2,6 +2,15 @@ from GenerateTargetDynamics import *
 import matplotlib.pyplot as plt
 import pdb
 
+def DefineNew2DInputSignals(inputVal, PeakReachTime,delayToInput, inputOnLength, timePoints):
+    inputSig = np.zeros((timePoints,2))
+    inputSig[delayToInput:(delayToInput+inputOnLength),0] = inputVal
+    inputSig[:,1]=np.ones(timePoints)*PeakReachTime
+
+    inputTensor = torch.zeros(timePoints, 1, 2)
+    inputTensor[:,0,:] = torch.from_numpy(inputSig) #seconddim is batch, thirddim is dim
+    return inputSig, inputTensor
+
 def DefineOutputRampTarget(targetSlope,targetPeak,delayToInput,timePoints,dt):
     targetSig = np.zeros((timePoints,1))
     targetTensor = torch.zeros(timePoints, 1, 1)
@@ -28,7 +37,6 @@ def DefineOutputRampTarget_PeakRandom(PeakReachTime,targetPeak,delayToInput,time
 
     targetSlope=targetPeak/(PeakReachTime-delayToInput)
 
-
     targetSig[(delayToInput+1):PeakReachTime+1]=np.expand_dims(np.linspace(targetSlope+targetSig[delayToInput][0],targetPeak,num=PeakReachTime-delayToInput),axis=-1)
     targetSig[(PeakReachTime+1):timePoints] = targetPeak
 
@@ -37,7 +45,24 @@ def DefineOutputRampTarget_PeakRandom(PeakReachTime,targetPeak,delayToInput,time
     return targetSig, targetTensor
 
 
-def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None,PeakReachTime=None):
+def DefineOutputSinusoidalTarget(targetPeriod,targetPeak,delayToInput,timePoints,dt):
+
+    targetSig = np.zeros((timePoints,1))
+    targetTensor = torch.zeros(timePoints, 1, 1)
+    targetSig[:delayToInput+1]=ComputeDecay(targetPeak,dt,delayToInput)
+
+    # if PeakReachTime<timePoints: We have make sure before call this function that this is satisfied
+    sine_inputarr=np.arange(timePoints-delayToInput)*(2*np.pi)/targetPeriod
+
+    targetSig[delayToInput:]=targetPeak*np.sin(sine_inputarr).reshape(-1,1)
+  
+    targetTensor[:,:,0] = torch.from_numpy(targetSig)
+
+
+    return targetSig, targetTensor
+
+
+def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None,PeakReachTime=None,targetPeriod=None):
     inputSig, inputTensor = DefineInputSignals(useVal, delayToInput, inputOnLength,timePoints)
 
     if outputType=='step':
@@ -46,25 +71,28 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
         targetSig, targetTensor = DefineOutputRampTarget(useVal/10, rampPeak, delayToInput, timePoints,dt)
     elif outputType=='newramp' or outputType=='ramp_PRRandom' or outputType=='20uniform':
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
-
+    elif outputType=='sine':
+        inputSig, inputTensor = DefineNew2DInputSignals(useVal,targetPeriod,delayToInput,inputOnLength,timePoints)
+        targetSig,targetTensor=DefineOutputSinusoidalTarget(targetPeriod,useVal,delayToInput,timePoints,dt)
 
     return inputSig, targetSig, inputTensor, targetTensor
 
-def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None,PeakReachTime=None):
+def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None,PeakReachTime=None,targetPeriod=None):
     numDim = len(useValVec)
     inputTensorList = []
     targetTensorList = []
 
 
     for ii in range(numDim):
-        inputSigCurrent, targetSigCurrent, inputTensorCurrent, targetTensorCurrent = \
-            GenerateOneDimensionalTarget(useValVec[ii],delayToInput, inputOnLength[ii],timePoints,dt,outputType,rampPeak,PeakReachTime[ii])
+        _, _, inputTensorCurrent, targetTensorCurrent = \
+            GenerateOneDimensionalTarget(useValVec[ii],delayToInput, inputOnLength[ii],timePoints,dt,outputType,rampPeak,PeakReachTime[ii],targetPeriod[ii])
         inputTensorList.append(inputTensorCurrent)
         targetTensorList.append(targetTensorCurrent)
 
     #Create multidimensional input, hidden, and target Tensors using cat
     inputTensor = inputTensorList[0]
     targetTensor = targetTensorList[0]
+
 
     for currentDim in range(1, numDim):
         inputTensor = torch.cat((inputTensor, inputTensorList[currentDim]), 2)
@@ -74,8 +102,6 @@ def TargetSingleSequence(useValVec, delayToInput, inputOnLength, timePoints,dt,o
     targetTensor = torch.transpose(targetTensor,0, 1)
 
 
-    #print('Input tensor size:') #' %d' % (inputTensor.size()))
-    #print(inputTensor.size())
     return  inputTensor, targetTensor
 
 def GenerateFactorCorrelated(numDim,randomDim,batchSize,correlation_multiplier,add_noise=0):
@@ -156,8 +182,9 @@ def PRTime2inputOnLength(oldLength,timePoints,PeakReachTime):
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
     PeakReachTime=np.full((numDim,batchSize),delayToInput+100)
     useValArray = np.random.uniform(-1,1,(numDim, batchSize))
+    targetPeriod=np.tile(np.linspace(timePoints/4,timePoints,num=batchSize+1)[1:],(numDim,1))
+    inputOnLengthArr=np.full((numDim,batchSize),inputOnLength)
 
-    inputOnLengthArr=np.full(batchSize,inputOnLength)
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
         inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)
@@ -168,21 +195,21 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
     if outputType=='20uniform':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
         useValArray=np.tile(np.linspace(-1,1,num=21),(numDim,1))
-        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)
+        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)        
+
 
     # Start first element 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLengthArr[:,0], timePoints,dt,outputType,rampPeak,PeakReachTime[:,0])
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLengthArr[:,0], timePoints,dt,outputType,rampPeak,PeakReachTime[:,0],targetPeriod[:,0])
     # Continue:
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLengthArr[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii])
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLengthArr[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTime[:,ii],targetPeriod[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
 
     return  inputTensor, targetTensor
-
 
 
 def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,add_noise_mult,rampPeak=None,biasedCorrMult=None):
@@ -261,6 +288,22 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
 
     return  inputTensor, targetTensor
 
+def plot2Check(targetTensors):
+    batch_size = len(targetTensors[0])
+    numDims=targetTensors[0].size(2)
+
+    colorList = ['b', 'g', 'r', 'k', 'c', 'm']
+
+    for j in range(numDims):
+        target_currDim=[targetTensor[:,:,j] for targetTensor in targetTensors]
+
+        plt.figure()
+        for i in range(batch_size):
+            currentColor = colorList[i%len(colorList)]
+            plt.plot(torch.cat(target_currDim, dim=1)[i].numpy(), currentColor+':')
+    
+        plt.show()
+
 
 
 # delayToInput = 20
@@ -269,6 +312,7 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
 # dt=0.1
 
 # numDim=3
-# batchSize=10
-# useValArray = np.random.uniform(-1,1,(numDim, batchSize))
-# TargetCorrelatedBatch(batchSize, numDim, 1,delayToInput, inputOnLength, timePoints,dt,'ramp',0.2,rampPeak=1)
+# batchSize=100
+# # useValArray = np.random.uniform(-1,1,(numDim, batchSize))
+# inputTensor,targetTensor=TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,'sine')
+# plot2Check([targetTensor])
