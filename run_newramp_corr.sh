@@ -8,7 +8,7 @@ if [ "$1" = "train" ]; then
     # mkdir -p results/step/hidden400epo3000_corr_newramp_0.1noise
     mkdir -p results/ramp_PRRandom/dim/hidden500epo5000_corr
     # python3 TrainRNNfromconfig.py --config_file ./corrstep.ini --baseDirectory ./results/step/hidden400epo3000_corr_newramp_0.1noise/ --baseSaveFileName fixedHiddenTrainingResults --gpu_idx 2
-    python3 TrainRNNfromconfig.py --config_file ./config/corrnewramp.ini --baseDirectory ./results/ramp_PRRandom/dim/hidden500epo5000_corr/ --baseSaveFileName fixedHiddenTrainingResults --gpu_idx 5
+    python3 TrainRNNfromconfig.py --config_file ./config/corrnewramp.ini --baseDirectory ./results/ramp_PRRandom/dim/hidden500epo5000_corr/ --baseSaveFileName fixedHiddenTrainingResults --gpu_idx 0
 elif [ "$1" = "train_local" ]; then
     # mkdir -p testing/step/hidden400epo3000_corr_newramp_0.1noise
     mkdir -p testing/ramp_PRRandom/dim/hidden500epo5000_corr
