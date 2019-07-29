@@ -508,8 +508,9 @@ def run_multiple_diffcorrNoise(corrNoiseLst,config,args):
         df_lst.append(df_current)
 
         #test
+        device = torch.device('cuda' if args.cuda else 'cpu')
         print(args.baseDirectory+args.baseSaveFileName+'_corrNoise'+str(args.corrNoise)+'_'+str(args.epochNum)+'_'+str(args.time-1))
-        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_corrNoise'+str(args.corrNoise)+'_'+str(args.epochNum)+'_'+str(args.time-1))
+        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_corrNoise'+str(args.corrNoise)+'_'+str(args.epochNum)+'_'+str(args.time-1)).to(device)
         out,inputTensor,target=RunMultiDimTestSet(network,config,args)
         plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
         dims,r_square=plot3dCorr(inputTensor, target, out,110,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')

@@ -81,6 +81,7 @@ def RunMultiDimTestSet(network, config,args):
     inputTensor, targetTensor=getRandomBatch(testSetSize, dimNum, delayToInput, inputOnLength, timePoints,args.dt,outputType,rampPeak=rP)
 
     inputTensor = Variable(inputTensor).to(device)
+    targetTensor=targetTensor.to(device)
 
 
     # testSetSize = perDimTestSetSize ** dimNum
