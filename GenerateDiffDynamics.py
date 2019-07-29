@@ -72,7 +72,7 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
     elif outputType=='newramp' or outputType=='ramp_PRRandom' or outputType=='20uniform':
         inputSig, inputTensor = DefineNew2DInputSignals(useVal,PeakReachTime,delayToInput,inputOnLength,timePoints)
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
-    elif outputType=='sine_periodRandom':
+    elif 'sine' in outputType:
         inputSig, inputTensor = DefineNew2DInputSignals(useVal,targetPeriod,delayToInput,inputOnLength,timePoints)
         targetSig,targetTensor=DefineOutputSinusoidalTarget(targetPeriod,useVal,delayToInput,timePoints,dt)
 
@@ -183,20 +183,22 @@ def PRTime2inputOnLength(oldLength,timePoints,PeakReachTime):
 def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,outputType,rampPeak=None):
     PeakReachTime=np.full((numDim,batchSize),delayToInput+100)
     useValArray = np.random.uniform(-1,1,(numDim, batchSize))
-    targetPeriod=np.tile(np.linspace(timePoints/4,timePoints,num=batchSize+1)[1:],(numDim,1))
+    targetPeriod=np.full((numDim,batchSize),timePoints*2/3)
     inputOnLengthArr=np.full((numDim,batchSize),inputOnLength)
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
         inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)
 
-    if outputType=='ramp':
+    elif outputType=='ramp':
         useValArray=get_validSlopeArray(useValArray,rampPeak,delayToInput,timePoints)
 
-    if outputType=='20uniform':
+    elif outputType=='20uniform':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(numDim,batchSize))
         useValArray=np.tile(np.linspace(-1,1,num=21),(numDim,1))
-        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)        
+        inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTime)  
+    elif outputType=='sine_periodRandom':
+        targetPeriod=np.tile(np.linspace(timePoints/4,timePoints,num=batchSize+1)[1:],(numDim,1))
 
 
     # Start first element 
@@ -309,13 +311,13 @@ def plot2Check(targetTensors):
 
 
 
-# delayToInput = 20
-# inputOnLength = 50
-# timePoints = 200 #100
-# dt=0.1
+delayToInput = 20
+inputOnLength = 50
+timePoints = 200 #100
+dt=0.1
 
-# numDim=3
-# batchSize=100
-# # useValArray = np.random.uniform(-1,1,(numDim, batchSize))
-# inputTensor,targetTensor=TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,'sine')
-# plot2Check([targetTensor])
+numDim=3
+batchSize=100
+# useValArray = np.random.uniform(-1,1,(numDim, batchSize))
+inputTensor,targetTensor=TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,'sine')
+plot2Check([targetTensor])
