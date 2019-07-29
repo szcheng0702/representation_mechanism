@@ -5,7 +5,7 @@ import pdb
 def DefineNew2DInputSignals(inputVal, PeakReachTime,delayToInput, inputOnLength, timePoints):
     inputSig = np.zeros((timePoints,2))
     inputSig[delayToInput:(delayToInput+inputOnLength),0] = inputVal
-    inputSig[:,1]=np.ones(timePoints)*PeakReachTime
+    inputSig[delayToInput:(delayToInput+inputOnLength),1]=PeakReachTime
 
     inputTensor = torch.zeros(timePoints, 1, 2)
     inputTensor[:,0,:] = torch.from_numpy(inputSig) #seconddim is batch, thirddim is dim

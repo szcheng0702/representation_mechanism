@@ -80,13 +80,21 @@ def combine_plot_crosstrials(csvfile_precendent,numTrials,dimLst,epochNum):
 	df_means.plot(yerr=df_errors,capsize=2,errorevery=2)
 	plt.savefig(csvfile_precendent+'dim.png')
 
+def plot_difftrials(csvfilename,dimlst):
+	df=pd.read_csv(csvfilename)
+	for d in dimLst:
+		plt.figure()
+		df_curr=df.loc[df['dim'] == d]
+		df_curr.plot(x='biasedCorrMultiplier',y='r^2')
+		plt.savefig(csvfilename.replace('.csv','dim'+str(d)+'.png'))
 
 
 
 
 
 
-dimLst=range(1,6)
-combine_plot_crosstrials('./results/step/dim/hidden200_epo4000/fixedHiddenTrainingResults_hidden200',5,dimLst,4000)
+dimLst=[1,2,4]
+plot_difftrials('/Users/sizhucheng/Desktop/representation_mechanism/results/newramp/biasedcorrMult/hidden500/fixedHiddenTrainingResults_1500_DiffbiasedCorrMult.csv',dimLst)
+# combine_plot_crosstrials('./results/step/dim/hidden200_epo4000/fixedHiddenTrainingResults_hidden200',5,dimLst,4000)
 # combine_results_plot('dim/tempTrainingResults_100','dim')
 # /Users/sizhucheng/Desktop/representation_mechanism/results/ramp/tempTrainingResults_100_LastLossDiffHidden.csv
