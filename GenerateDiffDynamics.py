@@ -216,6 +216,7 @@ def TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,ou
 def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLength, timePoints,dt,outputType,correlation_multiplier,add_noise_mult,rampPeak=None,biasedCorrMult=None):
     
     PeakReachTime=np.full((randomDim,batchSize),delayToInput+100)
+    targetPeriod=np.tile(np.linspace(timePoints/4,timePoints,num=batchSize+1)[1:],(numDim,1))
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
@@ -246,11 +247,11 @@ def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLeng
 
     # Start first element 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLengthArr[:,0], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLengthArr[:,0], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0],targetPeriod[:,0])
     # Continue:
     for ii in range(1, batchSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLengthArr[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLengthArr[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii],targetPeriod[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
@@ -269,6 +270,7 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
 
     PeakReachTimeArray=np.full((dimNum,testSetSize),delayToInput+100)
     inputOnLengthArr=np.full(testSetSize,inputOnLength)
+    targetPeriod=np.tile(np.linspace(timePoints/4,timePoints,num=batchSize+1)[1:],(numDim,1))
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.linspace(delayToInput+10,timePoints-10,testSetSize).astype(int)
@@ -278,11 +280,11 @@ def TargetMultiDimTestSet(testSetSize, dimNum, delayToInput, inputOnLength, time
         inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTimeArray)
 
     inputTensor, targetTensor = \
-        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength[:,0], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0])
+        TargetSingleSequence(useValArray[:,0], delayToInput, inputOnLength[:,0], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,0],targetPeriod[:,0])
 
     for ii in range(1, testSetSize):
         curInputTensor, curTargetTensor = \
-            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii])
+            TargetSingleSequence(useValArray[:,ii], delayToInput, inputOnLength[:,ii], timePoints,dt,outputType,rampPeak,PeakReachTimeArray[:,ii],targetPeriod[:,ii])
         inputTensor = torch.cat((inputTensor, curInputTensor), 0)
         targetTensor = torch.cat((targetTensor, curTargetTensor), 0)
 
