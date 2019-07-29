@@ -70,7 +70,7 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
     elif outputType=='ramp':
         targetSig, targetTensor = DefineOutputRampTarget(useVal/10, rampPeak, delayToInput, timePoints,dt)
     elif outputType=='newramp' or outputType=='ramp_PRRandom' or outputType=='20uniform':
-        inputSig, inputTensor = DefineNew2DInputSignals(useVal,PeakReachTime,delayToInput,inputOnLength,timePoints)
+        # inputSig, inputTensor = DefineNew2DInputSignals(useVal,PeakReachTime,delayToInput,inputOnLength,timePoints)
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
     elif 'sine' in outputType:
         inputSig, inputTensor = DefineNew2DInputSignals(useVal,targetPeriod,delayToInput,inputOnLength,timePoints)
@@ -219,6 +219,7 @@ def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLeng
     
     PeakReachTime=np.full((randomDim,batchSize),delayToInput+100)
     targetPeriod=np.tile(np.linspace(timePoints/4,timePoints,num=batchSize+1)[1:],(numDim,1))
+    inputOnLengthArr=np.full((numDim,batchSize),inputOnLength)
 
     if outputType=='ramp_PRRandom':
         PeakReachTime=np.random.randint(delayToInput+10,timePoints-10,size=(randomDim,batchSize))
@@ -242,10 +243,8 @@ def TargetCorrelatedBatch(batchSize, numDim, randomDim,delayToInput, inputOnLeng
     useValArray=np.concatenate((correlated_ValArray,random_useValArray),axis=0)
     PeakReachTimeArray=np.tile(PeakReachTime,(numDim,1))
 
-    inputOnLengthArr=np.full(batchSize,inputOnLength)
     if outputType=='ramp_PRRandom':
         inputOnLengthArr=PRTime2inputOnLength(inputOnLength,timePoints,PeakReachTimeArray)
-
 
     # Start first element 
     inputTensor, targetTensor = \
@@ -311,13 +310,13 @@ def plot2Check(targetTensors):
 
 
 
-delayToInput = 20
-inputOnLength = 50
-timePoints = 200 #100
-dt=0.1
+# delayToInput = 20
+# inputOnLength = 50
+# timePoints = 200 #100
+# dt=0.1
 
-numDim=3
-batchSize=100
-# useValArray = np.random.uniform(-1,1,(numDim, batchSize))
-inputTensor,targetTensor=TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,'sine')
-plot2Check([targetTensor])
+# numDim=3
+# batchSize=100
+# # useValArray = np.random.uniform(-1,1,(numDim, batchSize))
+# inputTensor,targetTensor=TargetBatch(batchSize, numDim, delayToInput, inputOnLength, timePoints,dt,'sine')
+# plot2Check([targetTensor])

@@ -452,6 +452,8 @@ def run_multipletrials_samesetting(config,args,option):
         opt_str='_hidden'+str(args.hiddenUnitNum)
     elif option=='dim':
         opt_str='_numdim'+str(args.outputSize)
+    elif option=='corrNoise':
+        opt_str='_numdim'+str(args.corrNoise)
     else:
         opt_str='_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)
  
@@ -485,12 +487,23 @@ def run_multiple_diffhiddenUnit(hiddenUnitLst,config,args):
     df=pd.concat(df_lst,axis=1)
     df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffHidden.csv')
 
+def run_multiple_diffcorrNoise(corrNoiseLst,config,args):
+    df_lst=[]
+    for i in range(len(corrNoiseLst)):
+        args.corrNoise=corrNoiseLst[i]
+        print('corrNoise: {}'.format(args.corrNoise))
+        df_current=run_multipletrials_samesetting(config,args,'corrNoise')
+        df_lst.append(df_current)
 
-def run_multiple_diffdim(dimLst,config,args):
+    df=pd.concat(df_lst,axis=1)
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffCorrNoise.csv')
+
+
+def run_multiple_diffdim(inputdimLst,outputdimLst,config,args):
     df_lst=[]
     for i in range(len(dimLst)):
-        args.outputSize=dimLst[i]
-        args.outputSize=dimLst[i]
+        args.inputSize=dinputimLst[i]
+        args.outputSize=outputdimLst[i]
         print('num of Dim: {}'.format(args.outputSize))
         df_current=run_multipletrials_samesetting(config,args,'dim')
         df_lst.append(df_current)
@@ -504,11 +517,13 @@ def run_multiple_diffdim(dimLst,config,args):
 if __name__=='__main__':
     config=Config()
     args = parser.parse_args()
+    corrNoiseLst=[0.2,0.1,0.05,0.02,0.01,0.005,0.002,0.001]
     # hiddenUnitLst=range(100,450,50)
     # dimLst=range(1,6)
     # run_multiple_diffdim(dimLst,config,args)
     if args.mode=='train':
-        run_multipletrials_samesetting(config,args,'')
+        # run_multipletrials_samesetting(config,args,'')
+        run_multiple_diffcorrNoise(corrNoiseLst,config,args)
     if args.mode=='test':
         print(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
         network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
