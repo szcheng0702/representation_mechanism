@@ -49,7 +49,7 @@ def DefineOutputSinusoidalTarget(targetPeriod,targetPeak,delayToInput,timePoints
 
     targetSig = np.zeros((timePoints,1))
     targetTensor = torch.zeros(timePoints, 1, 1)
-    targetSig[:delayToInput+1]=ComputeDecay(targetPeak,dt,delayToInput)
+    # targetSig[:delayToInput+1]=ComputeDecay(targetPeak,dt,delayToInput)
 
     # if PeakReachTime<timePoints: We have make sure before call this function that this is satisfied
     sine_inputarr=np.arange(timePoints-delayToInput)*(2*np.pi)/targetPeriod
@@ -72,7 +72,7 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
     elif outputType=='newramp' or outputType=='ramp_PRRandom' or outputType=='20uniform':
         inputSig, inputTensor = DefineNew2DInputSignals(useVal,PeakReachTime,delayToInput,inputOnLength,timePoints)
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
-    elif outputType=='sine':
+    elif outputType=='sine_periodRandom':
         inputSig, inputTensor = DefineNew2DInputSignals(useVal,targetPeriod,delayToInput,inputOnLength,timePoints)
         targetSig,targetTensor=DefineOutputSinusoidalTarget(targetPeriod,useVal,delayToInput,timePoints,dt)
 

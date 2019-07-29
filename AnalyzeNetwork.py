@@ -69,12 +69,11 @@ def RunMultiDimTestSet(network, config,args):
     device = torch.device('cuda' if args.cuda else 'cpu')
 
     network.eval() #add this line to make sure the network is in "evaluation" mode
-    dimNum=args.inputSize
+    dimNum=args.outputSize
     perDimTestSetSize=args.perDimTestSetSize
     outputType=args.dynamics
     testSetSize=args.testSetSize
     delayToInput,inputOnLength,timePoints,rP=signal_arguments(config)
-
 
 
 
@@ -84,9 +83,6 @@ def RunMultiDimTestSet(network, config,args):
     inputTensor = Variable(inputTensor).to(device)
 
 
-    #targetTensor = torch.transpose(targetTensor[:,:,0], 1, 0).to(device)
-
-    
     # testSetSize = perDimTestSetSize ** dimNum
     hiddenState = Variable(torch.randn(testSetSize, args.hiddenUnitNum)*1e-2).to(device)
     output = []

@@ -47,6 +47,8 @@ parser.add('--inputSize', type=int, default=1, metavar='N',
                     help='size of input dimension')
 parser.add('--outputSize', type=int, default=1, metavar='N',
                     help='size of output dimension')
+# parser.add('--inputDim', type=int, default=1, metavar='N',
+#                     help='size of input dimension for to generate one dimension output. Defined as inputSize/outputSize')
 parser.add('--randomDim', type=int, default=None, metavar='N',
                     help='number of dimensions which has no correalation. It is always smaller than args.inputSize')
 parser.add('--corrMultiplier', type=float, default=None, metavar='N',
@@ -83,7 +85,7 @@ parser.add('--save_every', type=int, default=1000, metavar='N',
 parser.add('--noise_std', type=float, default=0, metavar='N',
                     help='set noise value')
 parser.add('--dynamics',type=str,default='step',metavar='D',
-                    help='output dynamics type, choose from [step,ramp,newramp,ramp_PRRandom,ramp_2Dinput,sine]')
+                    help='output dynamics type, choose from [step,ramp,newramp,ramp_PRRandom,ramp_2Dinput,sine_periodRandom,sine]')
 parser.add('--mode',type=str,default='train',metavar='D',
                     help='task mode, choose from [train,test]')
 
