@@ -19,8 +19,7 @@ class RateUnitNetwork(nn.Module):
         self.noise = noise
 
     def forward(self, input, hidden):
-        # recurrentInput = self.h2h(self.tanh(hidden))
-        recurrentInput=self.h2h(F.relu(hidden))
+        recurrentInput = self.h2h(self.tanh(hidden))
 
         if self.noise==0:
             hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput))
@@ -29,5 +28,7 @@ class RateUnitNetwork(nn.Module):
             hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput+randomVal))
 
         output = self.h2o(hidden)
+
+        pdb.set_trace()
 
         return output, hidden
