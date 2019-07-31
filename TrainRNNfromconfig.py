@@ -74,6 +74,8 @@ parser.add('--numVariables', type=int, default=1, metavar='N',
                     help='number of variables encoded')
 parser.add('--resume', action='store_true', default=False,
                     help='resume training')
+parser.add('--lastSavedIter',type=int,default=0,metavar='N',
+                    help='only exists if resume is true. Restore from this iteration')
 parser.add('--dropUnit', type=int, default=None, metavar='N',
                     help='set selected hidden unit to zero')
 parser.add('--scheduler', action='store_true', default=False,
@@ -276,13 +278,13 @@ def run_singletrial(config,args,ithrun,experiment):
     print(device)
     print(args.dynamics)
 
-    lastSavedIter = 0
+    lastSavedIter = args.lastSavedIter
 
     if args.resume:
-        savedNetworkName = args.baseSaveFileName
-        baseSplit = args.baseSaveFileName.split('_')
-        defaultBaseName=baseSplit[0]
-        args.baseSaveFileName = defaultBaseName
+        savedNetworkName=args.baseDirectory+args.baseSaveFileName+experiment+'_'+str(lastSavedIter)+'_'+str(ithrun)
+        # baseSplit = args.baseSaveFileName.split('_')
+        # defaultBaseName=baseSplit[0]
+        # args.baseSaveFileName = defaultBaseName
 
         checkpoint = torch.load(savedNetworkName, map_location=lambda storage, loc: storage)
         args.hiddenUnitNum = checkpoint['hiddenUnitNum']
@@ -299,7 +301,7 @@ def run_singletrial(config,args,ithrun,experiment):
         rampPeak=checkpoint['rampPeak']
 
         network = RUN.RateUnitNetwork(
-            args.inputSize, args.hiddenUnitNum, args.outputSize, args.dt, args.noise)
+            args.inputSize, args.hiddenUnitNum, args.outputSize, args.dt, args.noise).to(device)
         network.load_state_dict(checkpoint['state_dict'])
         print("=> loaded model '{}'".format(args.baseSaveFileName))
         
@@ -318,10 +320,9 @@ def run_singletrial(config,args,ithrun,experiment):
         optimizer.load_state_dict(checkpoint['optimizer'])
 
     if args.scheduler:
+        scheduler=optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.25, patience=100, verbose=True, threshold=5e-6, min_lr=1e-7, eps=1e-8)
         if args.resume:
             scheduler.load_state_dict(checkpoint['scheduler'])
-        scheduler=optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.25, patience=100, verbose=True, threshold=5e-6, min_lr=1e-7, eps=1e-8)
-
 
     save_loss_every = 10
     plot_every = math.floor(0.1*args.epochNum)
@@ -340,26 +341,26 @@ def run_singletrial(config,args,ithrun,experiment):
     lowestLoss = 1e6
     current_avg_loss = lowestLoss
 
-    args.save_every=min(args.save_every,args.epochNum)
+    # args.save_every=min(args.save_every,args.epochNum)
 
     print('Training network')
     network.train() #add this line to make sure the network is in "training" mode
 
-    # if args.randomDim: 
-    #     inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
-    # else:
-    #     inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
-    # inputTensor = Variable(inputTensor).to(device)
-    # targetTensor=targetTensor.to(device)
+    if args.randomDim: 
+        inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
+    else:
+        inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
+    inputTensor = Variable(inputTensor).to(device)
+    targetTensor=targetTensor.to(device)
 
     for iter in range(lastSavedIter+1, args.epochNum + 1):
 
-        if args.randomDim: 
-            inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
-        else:
-            inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
-        inputTensor = Variable(inputTensor).to(device)
-        targetTensor=targetTensor.to(device)
+        # if args.randomDim: 
+        #     inputTensor, targetTensor =getCorrelatedBatch(args.batch_size, numDim, args.randomDim,delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,args.corrMultiplier,args.corrNoise,rampPeak,args.biasedCorrMultiplier)
+        # else:
+        #     inputTensor, targetTensor = getBatch(args.batch_size, numDim, delayToInput, inputOnLength, timePoints,config.dt,args.dynamics,rampPeak)
+        # inputTensor = Variable(inputTensor).to(device)
+        # targetTensor=targetTensor.to(device)
 
         
         optimizer.zero_grad()
@@ -420,7 +421,7 @@ def run_singletrial(config,args,ithrun,experiment):
             if args.scheduler:
                 state['scheduler']=scheduler.state_dict()
 
-            save_checkpoint(args,state, iter,ithrun)
+            save_checkpoint(args,state, iter,ithrun,experiment)
 
 
     print('Done training network')

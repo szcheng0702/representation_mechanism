@@ -29,6 +29,4 @@ class RateUnitNetwork(nn.Module):
 
         output = self.h2o(hidden)
 
-        pdb.set_trace()
-
         return output, hidden
