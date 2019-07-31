@@ -431,7 +431,7 @@ def run_singletrial(config,args,ithrun,experiment):
     list_of_tuples=list(zip(all_lossesX, all_losses))
 
     df = pd.DataFrame(list_of_tuples, columns = ['Iteration', 'MSELoss']) 
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+experiment+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
+    df.to_csv(args.baseDirectory+args.baseSaveFileName+experiment+'_'+str(args.epochNum)+'_'+str(ithrun)+'_losses.csv')
 
     print('Average training loss =', np.mean(all_losses))
 
