@@ -19,13 +19,16 @@ class RateUnitNetwork(nn.Module):
         self.noise = noise
 
     def forward(self, input, hidden):
-        recurrentInput = self.h2h(self.tanh(hidden))
+        # recurrentInput = self.h2h(self.tanh(hidden))
+        recurrentInput=self.h2h(hidden)
 
         if self.noise==0:
-            hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput))
+            # hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput))
+            hidden = self.tanh(((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput)))
         else:
             randomVal = torch.Tensor(hidden.size()).normal_(0,self.noise)
-            hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput+randomVal))
+            # hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput+randomVal))
+            hidden = self.tanh(((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput+randomVal)))
 
         output = self.h2o(hidden)
 
