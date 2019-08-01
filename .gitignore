@@ -1,9 +1,9 @@
- __pycache__/
- .DS_Store/
+ __pycache__
+ .DS_Store
 
  #ignore data
- results/
- testing/
+ results
+ testing
  
  *.csv
 .temp*

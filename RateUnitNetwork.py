@@ -22,6 +22,7 @@ class RateUnitNetwork(nn.Module):
         # recurrentInput = self.h2h(self.tanh(hidden))
         recurrentInput=self.h2h(hidden)
 
+
         if self.noise==0:
             # hidden = ((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput))
             hidden = self.tanh(((1-self.dt)*hidden + self.dt*(self.i2h(input)+recurrentInput)))
