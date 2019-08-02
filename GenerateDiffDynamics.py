@@ -69,7 +69,9 @@ def GenerateOneDimensionalTarget(useVal, delayToInput, inputOnLength, timePoints
         targetSig, targetTensor = DefineOutputTarget(useVal, delayToInput,timePoints,dt)
     elif outputType=='ramp':
         targetSig, targetTensor = DefineOutputRampTarget(useVal/10, rampPeak, delayToInput, timePoints,dt)
-    elif outputType=='newramp' or outputType=='ramp_PRRandom' or outputType=='20uniform':
+    elif outputType=='newramp':
+        targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
+    elif outputType=='ramp_PRRandom' or outputType=='20uniform':
         inputSig, inputTensor = DefineNew2DInputSignals(useVal,PeakReachTime,delayToInput,inputOnLength,timePoints)
         targetSig,targetTensor = DefineOutputRampTarget_PeakRandom(PeakReachTime,useVal,delayToInput,timePoints,dt)
     elif 'sine' in outputType:

@@ -191,6 +191,42 @@ def plot2ndVs1st3rd(targetTensors, outputTensors,figfilename):
 
     plt.savefig(figfilename.replace('.png','2ndvs3rddim.png'))
 
+
+def test_calculate_rsquare(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim):
+    if targetTensor.is_cuda:
+        targetTensor=targetTensor.cpu()
+
+    if outputTensor.is_cuda:
+        outputTensor=outputTensor.cpu()
+        inputTensor=inputTensor.cpu()
+
+    batch_size = targetTensor.size(0)
+    numDims=targetTensor.size(2)
+
+    dims=[]
+    r_square=[]
+
+    target_randomDims=targetTensor[:,timePoint2show,numDims-randomDim:].numpy()
+    target_corrDims=targetTensor[:,timePoint2show,:numDims-randomDim-1].numpy()
+    input_randomDims=inputTensor[:,100,numDims-randomDim:].numpy()
+    input_corrDims=inputTensor[:,100,:numDims-randomDim-1].numpy()
+    output_queryDim=outputTensor[:,timePoint2show,numDims-randomDim-1].numpy()
+
+
+    for i in range(target_corrDims.shape[1]):
+        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_corrDims[:,i])        
+        dims.append(i+1)
+        r_square.append(r_value**2)
+
+
+    for j in range(target_randomDims.shape[1]):
+        slope, intercept, r_value, p_value, std_err = stats.linregress(output_queryDim,input_randomDims[:,j])
+        dims.append(numDims-randomDim+j+1)
+        r_square.append(r_value**2)
+
+    return dims, r_square
+
+
 def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,figfilename):
     if targetTensor.is_cuda:
         targetTensor=targetTensor.cpu()
@@ -235,7 +271,6 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
         r_square.append(r_value**2)
         plt.savefig(figfilename.replace('.png',str(numDims-randomDim)+'dimvs'+str(numDims-randomDim+j+1)+'diminput.png'))
 
-    return dims,r_square
 
     # fig=plt.figure()
     # ax = fig.gca(projection='3d')
@@ -252,7 +287,6 @@ def plot3dCorr(inputTensor, targetTensor, outputTensor,timePoint2show,randomDim,
     # ax.set_zlim3d(-1,1)
     # ax.plot_trisurf(output_2ndDim,input_1stDim,input_3rdDim)
     # plt.savefig(figfilename.replace('.png','3D2ndvsInputs.png'))
-
 
 
 
@@ -452,135 +486,5 @@ def run_singletrial(config,args,ithrun,experiment):
 
     return targetTensor,oo,all_losses[-1]
 
-def run_multipletrials_samesetting(config,args,opt_str):
-    targetTensors=[]
-    outputTensors=[]
-    lastLosses=[]
 
-    for i in range(args.time):
-        print('Trial {}\n'.format(i+1))
-        targetTensor,outputTensor,lastloss=run_singletrial(config,args,i,opt_str)
-
-        targetTensors.append(targetTensor)
-        outputTensors.append(outputTensor)
-        lastLosses.append(lastloss)
-
-        # plot the last trial only
-        if not args.plotAllTrial:
-            if i==args.time-1:
-                plotOutput([targetTensor],[outputTensor],args.baseDirectory+args.baseSaveFileName+opt_str+'_'+str(args.time)+'trials.png')
-
-    df=pd.DataFrame({opt_str.lstrip('_'):lastLosses})
-
-
-    return df
-
-def run_multiple_diffhiddenUnit(hiddenUnitLst,config,args):
-    df_lst=[]
-    for i in range(len(hiddenUnitLst)):
-        args.hiddenUnitNum=hiddenUnitLst[i]
-        print('Hidden Units: {}'.format(args.hiddenUnitNum))
-        df_current=run_multipletrials_samesetting(config,args,'_hidden'+str(args.hiddenUnitNum))
-        df_lst.append(df_current)
-
-    df=pd.concat(df_lst,axis=1)
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffHidden.csv')
-
-def run_multiple_diffcorrNoise(corrNoiseLst,config,args):
-    df_lst=[]
-    dimslst=[]
-    r_squareslst=[]
-    corrlst=[]
-
-    for i in range(len(corrNoiseLst)):
-        args.corrNoise=corrNoiseLst[i]
-        print('corrNoise: {}'.format(args.corrNoise))
-        df_current=run_multipletrials_samesetting(config,args,'_corrNoise'+str(args.corrNoise))
-        df_lst.append(df_current)
-
-        #test
-        device = torch.device('cuda' if args.cuda else 'cpu')
-        print(args.baseDirectory+args.baseSaveFileName+'_corrNoise'+str(args.corrNoise)+'_'+str(args.epochNum)+'_'+str(args.time-1))
-        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_corrNoise'+str(args.corrNoise)+'_'+str(args.epochNum)+'_'+str(args.time-1)).to(device)
-        out,inputTensor,target=RunMultiDimTestSet(network,config,args)
-        plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
-        dims,r_square=plot3dCorr(inputTensor, target, out,110,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
-
-        dimslst+=dims
-        r_squareslst+=r_square
-        corrlst+=[args.corrNoise]*len(r_square)
-
-
-    df=pd.DataFrame({'dim':dimslst,'r^2':r_squareslst,'corrNoise':corrlst})
-
-    # df=pd.concat(df_lst,axis=1)
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_DiffCorrNoise.csv')
-
-
-
-def run_multiple_diffbiasedCorrMult(biasedCorrMultLst,config,args):
-    df_lst=[]
-    dimslst=[]
-    r_squareslst=[]
-    corrlst=[]
-
-    for i in range(len(biasedCorrMultLst)):
-        args.biasedCorrMultiplier=biasedCorrMultLst[i]
-        print('biasedCorrMultiplier: {}'.format(args.biasedCorrMultiplier))
-        df_current=run_multipletrials_samesetting(config,args,'_biasedCorrMultiplier'+str(args.biasedCorrMultiplier))
-        df_lst.append(df_current)
-
-        #test
-        device = torch.device('cuda' if args.cuda else 'cpu')
-        print(args.baseDirectory+args.baseSaveFileName+'_biasedCorrMult'+str(args.biasedCorrMultiplier)+'_'+str(args.epochNum)+'_'+str(args.time-1))
-        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_biasedCorrMult'+str(args.biasedCorrMultiplier)+'_'+str(args.epochNum)+'_'+str(args.time-1)).to(device)
-        out,inputTensor,target=RunMultiDimTestSet(network,config,args)
-        plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
-        dims,r_square=plot3dCorr(inputTensor, target, out,110,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
-
-        dimslst+=dims
-        r_squareslst+=r_square
-        corrlst+=[args.biasedCorrMultiplier]*len(r_square)
-
-    # df=pd.concat(df_lst,axis=1)
-    # df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffbiasedCorrMult.csv')
-
-    df=pd.DataFrame({'dim':dimslst,'r^2':r_squareslst,'biasedCorrMultiplier':corrlst})
-
-    # df=pd.concat(df_lst,axis=1)
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_DiffbiasedCorrMult.csv')
-
-def run_multiple_diffdim(inputdimLst,outputdimLst,config,args):
-    df_lst=[]
-    for i in range(len(dimLst)):
-        args.inputSize=dinputimLst[i]
-        args.outputSize=outputdimLst[i]
-        print('num of Dim: {}'.format(args.outputSize))
-        df_current=run_multipletrials_samesetting(config,args,'_numdim'+str(args.outputSize))
-        df_lst.append(df_current)
-
-    df=pd.concat(df_lst,axis=1)
-    df.to_csv(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_LastLossDiffDim.csv',index=False)
-
-
-
-
-if __name__=='__main__':
-    config=Config()
-    args = parser.parse_args()
-    # biasedCorrMultLst=[0.9,0.8,0.4,0.2,0.1,0.05,0.02]
-    # corrNoiseLst=[0.2,0.1,0.05,0.02,0.01,0.005,0.002]
-    # hiddenUnitLst=range(100,450,50)
-    # dimLst=range(1,6)
-    # run_multiple_diffdim(dimLst,config,args)
-    if args.mode=='train':
-        run_multipletrials_samesetting(config,args,'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize))
-        # run_multiple_diffcorrNoise(corrNoiseLst,config,args)
-        # run_multiple_diffbiasedCorrMult(biasedCorrMultLst,config,args)
-    if args.mode=='test':
-        print(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
-        network=LoadModel(args.baseDirectory+args.baseSaveFileName+'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize)+'_'+str(args.epochNum)+'_'+str(args.time-1))
-        out,inputTensor,target=RunMultiDimTestSet(network,config,args)
-        plotOutput([target],[out],args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
-        plot3dCorr(inputTensor, target, out,110,args.randomDim,args.baseDirectory+'TEST_'+args.baseSaveFileName+'_'+str(args.time)+'.png')
 
