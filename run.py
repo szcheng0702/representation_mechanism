@@ -161,15 +161,14 @@ if __name__=='__main__':
     config=Config()
     args = parser.parse_args()
     # biasedCorrMultLst=[0.9,0.8,0.4,0.2,0.1,0.05,0.02]
-    # corrNoiseLst=[0.2,0.1,0.05,0.02,0.01,0.005,0.002]
-    corrNoiseLst=[0.2,0.1]
+    corrNoiseLst=[0.2,0.1,0.08,0.07,0.06,0.05,0.02,0.01,0.008,0.005,0.002]
     dimlst=[1,3]
     # hiddenUnitLst=range(100,450,50)
     # dimLst=range(1,6)
     # run_multiple_diffdim(dimLst,config,args)
     if args.mode=='train':
         # run_multipletrials_samesetting(config,args,'_hidden'+str(args.hiddenUnitNum)+'_numdim'+str(args.outputSize))
-        # run_multiple_diffcorrNoise(corrNoiseLst,config,args)
+        run_multiple_diffcorrNoise(corrNoiseLst,config,args)
         plot_difftrials(args.baseDirectory+args.baseSaveFileName+'_'+str(args.epochNum)+'_DiffCorrNoise.csv',dimlst,'corrNoise')
         # run_multiple_diffbiasedCorrMult(biasedCorrMultLst,config,args)
     # if args.mode=='test':
